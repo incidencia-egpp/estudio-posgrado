@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Encuesta de empleabilidad – MGPP</title>
+<meta name="theme-color" content="#0F2150">
+<link rel="icon" href="logo-egpp-blanco.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0F2150; --navy-2:#1C2F66; --red:#D8445A; --ink:#1B2340; --slate:#4B597C;
+  --line:#C3C8D3; --tint:#F2F4F8; --paper:#FFFFFF; --ok:#2F7D5B;
+  --font:"Avenir Next","Avenir","Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--tint);font-size:16px;line-height:1.5;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.hidden{display:none!important}
+
+/* Cabecera */
+header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:10}
+.bar{display:flex;align-items:center;gap:20px;padding:12px 24px;max-width:1240px;margin:0 auto}
+.bar img{height:40px;width:auto;display:block}
+.bar .title{font-weight:600;font-size:.95rem;line-height:1.25;border-left:1px solid rgba(255,255,255,.35);padding-left:20px}
+.bar .title small{display:block;font-weight:400;opacity:.8}
+.bar .status{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:.85rem;flex-wrap:wrap;justify-content:flex-end}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#9AA3B8;vertical-align:middle}
+.online .dot{background:#5FD39B}
+.bar .status button{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.8rem}
+.bar .status button:hover{background:rgba(255,255,255,.12)}
+.stripe{height:5px;background:rgba(216,68,90,.28)}
+.stripe span{display:block;height:100%;width:0;background:var(--red);transition:width .35s ease}
+
+/* Pantallas */
+main{max-width:1240px;margin:0 auto;padding:28px 24px 120px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:32px}
+.narrow{max-width:520px;margin:40px auto}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 8px;color:var(--navy)}
+h2{font-size:1.35rem;line-height:1.25;margin:0 0 4px;color:var(--navy)}
+p.lead{color:var(--slate);margin:0 0 24px}
+label.field{display:block;font-weight:600;margin:16px 0 6px}
+input[type=text],input[type=number],input[type=password],input[type=datetime-local],textarea{
+  width:100%;border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:#fff}
+input:disabled,textarea:disabled{background:var(--tint);color:var(--slate)}
+textarea{min-height:96px;resize:vertical}
+.btn{border:0;border-radius:6px;padding:12px 20px;font-weight:600;cursor:pointer;background:var(--navy);color:#fff}
+.btn:hover{background:var(--navy-2)}
+.btn.ghost{background:transparent;color:var(--navy);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--tint)}
+.btn.warn{background:transparent;color:var(--red);border:1px solid var(--red)}
+.msg{margin-top:16px;padding:10px 14px;border-radius:6px;font-size:.92rem}
+.msg.err{background:#FBE9EC;color:#8E2233}
+.msg.info{background:var(--tint);color:var(--slate)}
+
+/* Formulario */
+.layout{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start}
+nav.sections{position:sticky;top:96px}
+nav.sections ol{list-style:none;margin:0;padding:0}
+nav.sections li{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;color:var(--slate);font-size:.92rem}
+nav.sections li b{color:var(--navy);min-width:1.4em}
+nav.sections li.done{color:var(--ink)}
+nav.sections li.done b::after{content:"✓";color:var(--ok);margin-left:4px;font-size:.8rem}
+nav.sections li.current{background:var(--paper);color:var(--navy);font-weight:600;box-shadow:inset 3px 0 0 var(--red)}
+nav.sections li.skip{opacity:.4;text-decoration:line-through}
+.legend{margin-top:18px;font-size:.8rem;color:var(--slate);border-top:1px solid var(--line);padding-top:12px}
+.legend i{color:var(--slate)}
+.sechead{display:flex;align-items:baseline;gap:14px;margin-bottom:22px}
+.sechead .letter{font-size:2.6rem;line-height:1;font-weight:700;color:var(--red)}
+.item{padding:22px 0;border-top:1px solid var(--tint)}
+.item:first-of-type{border-top:0;padding-top:4px}
+.qcode{font-weight:700;color:var(--navy);margin-right:8px}
+.qtext{font-size:1.06rem;font-weight:500;max-width:72ch}
+.ins{display:block;font-style:italic;color:var(--slate);font-size:.9rem;margin-top:4px;max-width:72ch}
+.read{border-left:4px solid var(--navy);background:var(--tint);padding:16px 20px;font-size:1.05rem;max-width:76ch;border-radius:0 8px 8px 0}
+.read p{margin:0 0 10px}.read p:last-child{margin:0}
+.note{color:var(--slate);font-style:italic;font-size:.92rem;max-width:72ch}
+.opts{display:grid;gap:6px;margin-top:12px;max-width:760px}
+.opts.two{grid-template-columns:1fr 1fr}
+.opt{position:relative;display:flex;align-items:flex-start;gap:12px;border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer;background:#fff}
+.opt:hover{border-color:var(--slate)}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .code{flex:0 0 auto;min-width:2.2em;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;color:var(--navy);background:var(--tint);border-radius:4px;padding:1px 6px;font-size:.85rem;margin-top:1px}
+.opt.sel{background:var(--navy);border-color:var(--navy);color:#fff}
+.opt.sel .code{background:rgba(255,255,255,.18);color:#fff}
+.opt:has(input:focus-visible){outline:3px solid var(--red);outline-offset:2px}
+.opt.box .code::before{content:"";}
+.esp{margin:6px 0 4px 3.4em;max-width:640px}
+.nr{display:inline-flex;align-items:center;gap:8px;margin-top:8px;font-size:.9rem;color:var(--slate);cursor:pointer}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.row input[type=number]{max-width:160px}
+.err-text{color:#8E2233;font-size:.88rem;margin-top:6px}
+.item.invalid .qtext{color:#8E2233}
+/* Batería */
+.gridwrap{overflow-x:auto;margin-top:12px}
+table.grid{border-collapse:collapse;min-width:640px;width:100%}
+table.grid th,table.grid td{border-bottom:1px solid var(--tint);padding:8px 6px;text-align:center;font-size:.88rem}
+table.grid th{color:var(--slate);font-weight:600;vertical-align:bottom}
+table.grid td.lab{text-align:left;font-size:.95rem;max-width:340px}
+table.grid td.lab b{color:var(--navy);margin-right:6px}
+table.grid label.cell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:36px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+table.grid label.cell input{position:absolute;opacity:0}
+table.grid label.cell.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+table.grid label.cell:has(input:focus-visible){outline:3px solid var(--red);outline-offset:2px}
+table.grid tr.missing td.lab{color:#8E2233}
+.scale{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.scale label{position:relative;width:46px;height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+.scale label.wide{width:auto;padding:0 12px;font-weight:500;font-size:.88rem}
+.scale label.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+.scale input{position:absolute;opacity:0}
+.scale label:has(input:focus-visible){outline:3px solid var(--red);outline-offset:2px}
+.scale-ends{display:flex;justify-content:space-between;max-width:560px;font-size:.82rem;color:var(--slate);margin-top:4px}
+/* Pie de navegación */
+.foot{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:9;padding-bottom:env(safe-area-inset-bottom,0px)}
+.foot .in{max-width:1240px;margin:0 auto;padding:12px 24px;display:flex;gap:12px;align-items:center}
+.foot .spacer{flex:1}
+.foot .hint{color:var(--slate);font-size:.88rem}
+.done-list{margin:16px 0 24px;padding:0;list-style:none}
+.done-list li{padding:6px 0;border-bottom:1px solid var(--tint);font-size:.95rem}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  nav.sections{position:static}
+  nav.sections ol{display:flex;gap:4px;overflow-x:auto}
+  nav.sections li{white-space:nowrap}
+  nav.sections li span{display:none}
+  .legend{display:none}
+  .bar .title{display:none}
+  .opts.two{grid-template-columns:1fr}
+  .card{padding:22px}
+}
+@media (prefers-reduced-motion:reduce){.stripe span{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <img src="logo-egpp-blanco.png" alt="Gobierno y Políticas Públicas PUCP">
+    <div class="title">Encuesta de empleabilidad<small>Egresados/as de la Maestría en Gobierno y Políticas Públicas</small></div>
+    <div class="status" id="status">
+      <span id="net"><span class="dot"></span><span id="netTxt">Sin conexión</span></span>
+      <span id="pend"></span>
+      <button id="btnSync" class="hidden" type="button">Enviar pendientes</button>
+      <span id="who"></span>
+      <button id="btnSalir" class="hidden" type="button">Salir</button>
+    </div>
+  </div>
+  <div class="stripe"><span id="progress"></span></div>
+</header>
+
+<main>
+  <!-- Acceso -->
+  <section id="scrLogin" class="card narrow hidden">
+    <h1>Ingreso del encuestador/a</h1>
+    <p class="lead">Usa el código de acceso que te asignó el equipo de investigación. La primera vez necesitas conexión a internet; luego el formulario funciona sin ella.</p>
+    <label class="field" for="inCodigo">Código de acceso</label>
+    <input id="inCodigo" type="password" autocomplete="off">
+    <div style="margin-top:20px"><button class="btn" id="btnLogin" type="button">Ingresar</button></div>
+    <div id="loginMsg"></div>
+  </section>
+
+  <!-- Inicio -->
+  <section id="scrHome" class="card narrow hidden">
+    <h1>Registro de llamadas</h1>
+    <p class="lead">Cada llamada es un registro, aunque la persona no conteste. Los registros se guardan en este equipo y se envían al Sheets cuando hay conexión.</p>
+    <div id="draftBox" class="msg info hidden"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" id="btnNueva" type="button">Nueva llamada</button>
+      <button class="btn ghost hidden" id="btnContinuar" type="button">Continuar registro en curso</button>
+    </div>
+    <div class="row" style="margin-top:28px">
+      <button class="btn ghost" id="btnRespaldo" type="button">Descargar respaldo de pendientes</button>
+    </div>
+    <div id="homeMsg"></div>
+  </section>
+
+  <!-- Formulario -->
+  <section id="scrForm" class="hidden">
+    <div class="layout">
+      <nav class="sections" aria-label="Secciones">
+        <ol id="navList"></ol>
+        <div class="legend">Texto normal: se lee a la persona.<br><i>Texto en cursiva gris: indicación para el encuestador; no se lee.</i></div>
+      </nav>
+      <div class="card">
+        <div class="sechead"><span class="letter" id="secLetter"></span><h2 id="secTitle"></h2></div>
+        <div id="secBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Guardado -->
+  <section id="scrDone" class="card narrow hidden">
+    <h1 id="doneTitle">Registro guardado</h1>
+    <p class="lead" id="doneText"></p>
+    <ul class="done-list" id="doneList"></ul>
+    <button class="btn" id="btnOtra" type="button">Nueva llamada</button>
+  </section>
+</main>
+
+<div class="foot hidden" id="foot">
+  <div class="in">
+    <button class="btn ghost" id="btnPrev" type="button">Anterior</button>
+    <span class="hint" id="footHint"></span>
+    <span class="spacer"></span>
+    <button class="btn warn hidden" id="btnIncompleta" type="button">Terminar como incompleta</button>
+    <button class="btn" id="btnNext" type="button">Siguiente</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
+const CONFIG = {
+  SCRIPT_URL: 'PEGAR_AQUI_LA_URL_DE_LA_APLICACION_WEB',   // termina en /exec
+  VERSION: 'v1.0'
+};
+const MODO_PRUEBA = !/^https:\/\/script\.google\.com\//.test(CONFIG.SCRIPT_URL);
+
+/* =========================================================
+   ESQUEMA DEL CUESTIONARIO (según el diccionario de variables)
+   ========================================================= */
+const v = id => R[id];
+const has = id => R[id] !== undefined && R[id] !== null && R[id] !== '';
+const inn = (id, arr) => arr.includes(R[id]);
+const ACC = () => v('B0') === 1;
+
+const L = {
+  AREA: [[1,'Alta dirección o gerencia general (despacho, viceministerio, secretaría general, directorio)'],[2,'Área de línea u operativa: la que hace la actividad principal de la institución (direcciones generales, programas, proyectos, operaciones o área comercial en una empresa)'],[3,'Asesoría jurídica o procuraduría'],[4,'Planeamiento y presupuesto'],[5,'Administración y soporte (finanzas, logística, recursos humanos, comunicaciones, tecnologías de la información, atención al ciudadano)'],[6,'Control, auditoría o integridad'],[95,'Otra. Especificar'],[99,'Prefiere no responder']],
+  CARGO: [[1,'Funcionario/a o directivo/a (por ejemplo: director, gerente, jefe)'],[2,'Profesional especializado/a (por ejemplo: asesor, abogado, auditor, docente, consultor, médico, ingeniero, contador, economista, psicólogo, investigador)'],[3,'Coordinador/a'],[4,'Especialista'],[5,'Analista'],[6,'Asistente, auxiliar o técnico/a (incluye secretario)'],[7,'Trabajador/a independiente o dueño/a de negocio propio'],[95,'Otro. Especificar'],[99,'Prefiere no responder']],
+  ORG: [[1,'Gobierno nacional (ministerios y sus organismos adscritos)'],[2,'Gobierno regional o local'],[3,'Otra entidad pública (Congreso, Poder Judicial, organismos autónomos)'],[4,'Empresa pública'],[5,'Empresa privada (incluye consultoras)'],[6,'ONG u organización de la sociedad civil'],[7,'Organismo internacional o de cooperación'],[8,'Universidad o centro de investigación (público o privado)'],[9,'Trabaja de forma independiente, sin empleador'],[10,'Policía Nacional del Perú (en situación de actividad)'],[95,'Otro. Especificar']],
+  ING: [[1,'Menos de S/ 2,000'],[2,'De S/ 2,000 a menos de S/ 3,500'],[3,'De S/ 3,500 a menos de S/ 5,000'],[4,'De S/ 5,000 a menos de S/ 7,500'],[5,'De S/ 7,500 a menos de S/ 10,000'],[6,'S/ 10,000 o más'],[99,'Prefiere no responder']],
+  PCAT: [[1,'Oficial de armas'],[2,'Oficial de servicios'],[3,'Suboficial de armas'],[4,'Suboficial de servicios'],[99,'Prefiere no responder']],
+  PGRA: [[1,'General o Teniente General'],[2,'Coronel'],[3,'Comandante'],[4,'Mayor'],[5,'Capitán'],[6,'Teniente'],[7,'Alférez'],[11,'Suboficial Superior'],[12,'Suboficial Brigadier'],[13,'Suboficial Técnico de Primera'],[14,'Suboficial Técnico de Segunda'],[15,'Suboficial Técnico de Tercera'],[16,'Suboficial de Primera'],[17,'Suboficial de Segunda'],[18,'Suboficial de Tercera'],[99,'Prefiere no responder']],
+  PUNI: [[1,'Alto Mando, Comando de Operaciones Policiales o Inspectoría (Comandancia General, Estado Mayor General, Inspectoría General)'],[2,'Asesoramiento o apoyo administrativo (asesoría jurídica, planeamiento, administración, recursos humanos, bienestar, tecnologías de la información, comunicación e imagen)'],[3,'Apoyo policial (inteligencia, criminalística, asuntos internacionales e Interpol, aviación policial, educación y doctrina, sanidad)'],[4,'Investigación criminal: Dirincri, Antidrogas, Contra el Terrorismo, Contra la Corrupción, Lavado de Activos, Trata de Personas, Policía Fiscal, Cibercrimen o Medio Ambiente'],[5,'Orden y seguridad: Seguridad del Estado, Operaciones Especiales, Seguridad Integral, Fronteras, Tránsito, Turismo, Policía Comunitaria o Familia'],[6,'Región o Frente Policial: comisaría'],[7,'Región o Frente Policial: otra unidad (división de investigación criminal, inteligencia regional, unidades especiales)'],[8,'Destacado fuera de la PNP (Ministerio del Interior u otra entidad)'],[95,'Otra. Especificar'],[99,'Prefiere no responder']],
+  PFUN: [[1,'Comando o jefatura (jefe de dirección, división, departamento o comisaría)'],[2,'Estado mayor o plana mayor (planeamiento, asesoramiento al comando)'],[3,'Investigación criminal (pesquisa, instrucción de casos)'],[4,'Servicio operativo de orden y seguridad (patrullaje, servicio en comisaría, operaciones)'],[5,'Inteligencia'],[6,'Administrativa (personal, logística, economía, secretaría)'],[7,'Docencia o instrucción en escuelas policiales'],[8,'Especialista técnico (criminalística, tecnologías de la información, sanidad, asesoría jurídica)'],[95,'Otra. Especificar'],[99,'Prefiere no responder']],
+  MOM: [[2,'Durante la maestría'],[3,'Dentro de los primeros 6 meses después de concluir los estudios'],[4,'Entre 7 y 12 meses después de concluir los estudios'],[5,'Entre 1 y 2 años después de concluir los estudios'],[6,'Más de 2 años después de concluir los estudios']],
+  COMP: [['a','Ética: evaluar decisiones públicas con criterios éticos y de interés general'],['b','Pensamiento crítico: analizar problemas públicos con evidencia y desde distintos puntos de vista'],['c','Comunicación eficaz: comunicar ideas y argumentos con claridad, de forma oral y escrita'],['d','Colaboración: trabajar con actores de dentro y fuera de su organización para generar valor público'],['e','Liderazgo y gestión estratégica: liderar equipos y gestionar recursos con visión estratégica'],['f','Investigación, innovación y pensamiento digital: proponer soluciones innovadoras usando evidencia y herramientas digitales'],['g','Aprendizaje autónomo y adaptabilidad: aprender por cuenta propia y adaptarse a cambios del entorno']]
+};
+const NAME_INS = ['Anotar el nombre completo, sin siglas ("Ministerio de Salud", no "Minsa").','Si es una entidad grande, anotar también la dependencia ("Ministerio de Salud – Hospital Loayza").','Si es una municipalidad o un gobierno regional, anotar cuál ("Municipalidad Distrital de Surco").','Si la respuesta es genérica ("una empresa privada"), repreguntar una vez por el nombre.'].join(' ');
+
+const S = [
+ {k:'A', t:'Registro de la llamada', items:[
+  {type:'text', id:'A0_1', code:'A0.1', q:'Código de la persona egresada', ins:'De la lista de contactos.'},
+  {type:'radio', id:'A0_2', code:'A0.2', q:'¿La persona figura como policía en el registro de egresados?', ins:'Marcar según la lista de contactos. No se pregunta.', opts:[[1,'Sí'],[2,'No']]},
+  {type:'radio', id:'A0_3', code:'A0.3', q:'Número de intento', opts:[[1,'1.er intento'],[2,'2.º intento']]},
+  {type:'radio', id:'A0_4', code:'A0.4', q:'¿Contestaron la llamada?', opts:[[1,'Sí'],[2,'No']]},
+  {type:'radio', id:'A0_5', code:'A0.5', q:'Motivo por el que no contestaron', when:()=>v('A0_4')===2, opts:[[1,'No contestó o entró el buzón de voz'],[2,'Número apagado, fuera de servicio o equivocado']]},
+  {type:'radio', id:'A0_6', code:'A0.6', q:'¿Quién contestó?', when:()=>v('A0_4')===1, opts:[[1,'La persona egresada'],[2,'Otra persona; la persona egresada no estaba disponible']]}
+ ]},
+ {k:'B', t:'Presentación y consentimiento', items:[
+  {type:'read', when:()=>v('A0_6')===1, html:'<p>Buenos días/tardes. Mi nombre es <b>[su nombre]</b> y me comunico por encargo de la Escuela de Gobierno y Políticas Públicas de la Pontificia Universidad Católica del Perú (PUCP). Estamos realizando un estudio sobre la trayectoria profesional y la empleabilidad de las personas que cursaron la Maestría en Gobierno y Políticas Públicas. El objetivo es conocer sus experiencias profesionales, los cambios que han experimentado en su trayectoria y su percepción sobre el aporte de la maestría.</p><p>La encuesta tendrá una duración aproximada de 15 a 20 minutos. Su participación es voluntaria. Puede decidir no responder alguna pregunta o finalizar la entrevista en cualquier momento. Sus respuestas serán tratadas de manera confidencial y se analizarán únicamente de forma agrupada, por lo que sus datos personales no serán divulgados ni asociados a los resultados del estudio.</p>'},
+  {type:'radio', id:'B0', code:'B0', q:'¿Acepta participar en esta encuesta?', when:()=>v('A0_6')===1, opts:[[1,'Sí'],[2,'No'],[3,'Pide que la llamen en otro momento']]},
+  {type:'datetime', id:'B0_cita', code:'', q:'Fecha y hora acordadas para la nueva llamada', when:()=>v('B0')===3}
+ ]},
+ {k:'P', t:'Perfil de la persona egresada', items:[
+  {type:'number', id:'P1', code:'P1', q:'¿Qué edad tiene actualmente?', unit:'años', min:20, max:80, nr:[99,'Prefiere no responder']},
+  {type:'radio', id:'P2', code:'P2', q:'¿Con qué género se identifica?', opts:[[1,'Femenino'],[2,'Masculino'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'P2_esp'}},
+  {type:'radio', id:'P3', code:'P3', q:'¿Dónde reside actualmente?', opts:[[1,'Lima Metropolitana y Callao'],[2,'Otro departamento del Perú. Especificar'],[3,'Fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P3_esp',3:'P3_esp'}},
+  {type:'text', id:'P4', code:'P4', q:'¿Qué carrera estudió en el pregrado?', ins:'Pregunta abierta.', nr:['99','No responde']},
+  {type:'radio', id:'P5', code:'P5', q:'¿En qué universidad o institución realizó principalmente sus estudios de pregrado?', opts:[[1,'PUCP'],[2,'Otra institución en el Perú. Especificar'],[3,'Institución fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P5_esp',3:'P5_esp'}},
+  {type:'number', id:'P6', code:'P6', q:'Aproximadamente, ¿cuántos años de experiencia laboral tiene en total?', ins:'Contar desde las prácticas.', unit:'años', min:0, max:60, nr:[99,'Prefiere no responder']},
+  {type:'note', html:'P7 y P8: completar con el registro de egresados. Preguntar solo si no se cuenta con el dato.'},
+  {type:'radio', id:'P7', code:'P7', q:'¿En qué modalidad cursó la maestría?', opts:[[1,'Presencial'],[2,'A distancia'],[3,'Cursó parte en cada modalidad']]},
+  {type:'number', id:'P8', code:'P8', q:'¿En qué año concluyó sus estudios de maestría?', min:2021, max:2026, nr:[98,'No recuerda']},
+  {type:'radio', id:'P9', code:'P9', q:'¿Cuál fue el principal motivo por el que eligió la Maestría en Gobierno y Políticas Públicas de la PUCP?', ins:'No leer alternativas. Marcar la más cercana a la respuesta.', opts:[[1,'Prestigio de la PUCP'],[2,'Plan de estudios o cursos'],[3,'Docentes'],[4,'Modalidad o flexibilidad de horarios'],[5,'Costo o facilidades de financiamiento'],[6,'Recomendación de colegas, egresados/as o conocidos'],[95,'Otro. Especificar'],[98,'No recuerda']], esp:{95:'P9_esp'}}
+ ]},
+ {k:'C', t:'Situación laboral antes de la maestría', items:[
+  {type:'radio', id:'C1', code:'C1', q:'Inmediatamente antes de iniciar la maestría, ¿cuál describe mejor su situación laboral principal?', opts:[[1,'Trabajaba'],[2,'No trabajaba'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'C2', code:'C2', q:'¿En qué tipo de organización trabajaba principalmente?', ins:'Indagar y marcar la categoría que agrupa.', when:()=>v('C1')===1, opts:L.ORG, esp:{95:'C2_esp'}, two:true},
+  {type:'text', id:'C3', code:'C3', q:'¿Cuál era el nombre de la institución, empresa u organización donde trabajaba?', ins:NAME_INS, when:()=>v('C1')===1 && has('C2') && !inn('C2',[9,10]), nr:['99','Prefiere no responder']},
+  {type:'precoded', id:'C4', txt:'C4_txt', code:'C4', q:'¿En qué área u oficina de esa institución trabajaba?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>v('C1')===1 && has('C2') && !inn('C2',[9,10]), opts:L.AREA, esp:{95:'C4_esp'}},
+  {type:'precoded', id:'C5', txt:'C5_txt', code:'C5', q:'¿Cuál era el nombre de su cargo o puesto en ese trabajo?', ins:'Pregunta abierta. Anotar el cargo tal como lo dice y marcar el grupo que corresponda. Si no es claro, leer las opciones.', label:'Cargo', when:()=>v('C1')===1 && has('C2') && !inn('C2',[9,10]), opts:L.CARGO, esp:{95:'C5_esp'}},
+  {type:'note', html:'Independiente: se registra automáticamente C5 = 7 (trabajador/a independiente).', when:()=>v('C2')===9},
+  {type:'radio', id:'C6', code:'C6', q:'¿Cuál era su principal vínculo laboral?', when:()=>v('C1')===1 && has('C2') && v('C2')!==10, opts:[[1,'Nombramiento o carrera pública'],[2,'Contrato indefinido'],[3,'Contrato a plazo fijo'],[4,'Locación de servicios, recibos por honorarios o consultoría'],[5,'Trabajo independiente o negocio propio'],[6,'Prácticas profesionales'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'C6_esp'}},
+  {type:'note', html:'Módulo policial: reemplaza C3 a C6.', when:()=>v('C2')===10},
+  {type:'radio', id:'CP1', code:'CP1', q:'¿Cuál era su categoría en la Policía Nacional del Perú?', when:()=>v('C2')===10, opts:L.PCAT},
+  {type:'radio', id:'CP2', code:'CP2', q:'¿Cuál era su grado?', ins:'No leer. Marcar según la respuesta.', when:()=>v('C2')===10, opts:L.PGRA, two:true},
+  {type:'precoded', id:'CP3', txt:'CP3_txt', code:'CP3', q:'¿En qué unidad prestaba servicios?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('C2')===10, opts:L.PUNI, esp:{95:'CP3_esp'}},
+  {type:'radio', id:'CP4', code:'CP4', q:'¿Cuál era su función principal en esa unidad?', when:()=>v('C2')===10, opts:L.PFUN, esp:{95:'CP4_esp'}},
+  {type:'radio', id:'C7', code:'C7', q:'Antes de entrar a la maestría, ¿podría indicarme en qué rango se encontraba aproximadamente su ingreso neto mensual personal?', when:()=>v('C1')===1 && has('C2'), opts:L.ING}
+ ]},
+ {k:'D', t:'Situación laboral actual', items:[
+  {type:'radio', id:'D1', code:'D1', q:'Actualmente, ¿cuál describe mejor su situación principal?', opts:[[1,'Trabaja'],[2,'No trabaja'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'D2', code:'D2', q:'¿Qué tipo de organización es?', ins:'Indagar y marcar la categoría que agrupa.', when:()=>v('D1')===1, opts:L.ORG, optWhen:{10:()=>v('A0_2')===1}, esp:{95:'D2_esp'}, two:true},
+  {type:'text', id:'D3', code:'D3', q:'¿Cuál es el nombre de la institución, empresa u organización donde trabaja actualmente?', ins:NAME_INS, when:()=>v('D1')===1 && has('D2') && !inn('D2',[9,10]), nr:['99','Prefiere no responder']},
+  {type:'precoded', id:'D4', txt:'D4_txt', code:'D4', q:'¿En qué área u oficina de esa institución trabaja actualmente?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>v('D1')===1 && has('D2') && !inn('D2',[9,10]), opts:L.AREA, esp:{95:'D4_esp'}},
+  {type:'precoded', id:'D5', txt:'D5_txt', code:'D5', q:'¿Cuál es su cargo o puesto actual?', ins:'Pregunta abierta. Anotar el cargo tal como lo dice y marcar el grupo que corresponda. Si no es claro, leer las opciones.', label:'Cargo', when:()=>v('D1')===1 && has('D2') && !inn('D2',[9,10]), opts:L.CARGO, esp:{95:'D5_esp'}},
+  {type:'note', html:'Independiente: se registra automáticamente D5 = 7 (trabajador/a independiente).', when:()=>v('D2')===9},
+  {type:'radio', id:'D6', code:'D6', q:'¿Cuál es principalmente su modalidad de vínculo laboral actual?', when:()=>v('D1')===1 && has('D2') && v('D2')!==10, opts:[[1,'Nombramiento o carrera pública'],[2,'Contrato indefinido'],[3,'Contrato a plazo fijo'],[4,'Locación de servicios, recibos por honorarios o consultoría'],[5,'Trabajo independiente o negocio propio'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'D6_esp'}},
+  {type:'note', html:'Módulo policial: reemplaza D3 a D6.', when:()=>v('D2')===10},
+  {type:'radio', id:'DP1', code:'DP1', q:'¿Cuál es su categoría en la Policía Nacional del Perú?', when:()=>v('D2')===10, opts:L.PCAT},
+  {type:'radio', id:'DP2', code:'DP2', q:'¿Cuál es su grado actual?', ins:'No leer. Marcar según la respuesta.', when:()=>v('D2')===10, opts:L.PGRA, two:true},
+  {type:'precoded', id:'DP3', txt:'DP3_txt', code:'DP3', q:'¿En qué unidad presta servicios actualmente?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('D2')===10, opts:L.PUNI, esp:{95:'DP3_esp'}},
+  {type:'radio', id:'DP4', code:'DP4', q:'¿Cuál es su función principal en esa unidad?', when:()=>v('D2')===10, opts:L.PFUN, esp:{95:'DP4_esp'}},
+  {type:'radio', id:'D7', code:'D7', q:'Considerando su ingreso mensual neto aproximado, ¿en qué rango se encuentra actualmente?', when:()=>v('D1')===1 && has('D2'), opts:L.ING},
+  {type:'radio', id:'D8', code:'D8', q:'¿Hace cuánto tiempo no tiene un trabajo remunerado?', when:()=>inn('D1',[2,99]), opts:[[1,'Menos de 6 meses'],[2,'Entre 6 y 12 meses'],[3,'Entre 1 y 2 años'],[4,'Más de 2 años'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'D9', code:'D9', q:'¿Actualmente está buscando trabajo?', when:()=>inn('D1',[2,99]), opts:[[1,'Sí'],[2,'No'],[99,'Prefiere no responder']]}
+ ]},
+ {k:'E', t:'Trayectoria y movilidad profesional', items:[
+  {type:'radio', id:'E1', code:'E1', when:()=>has('C1') && has('D1') && !(v('C2')===10 && v('D2')===10),
+   qf:()=> v('D1')!==1 ? 'Pensando en su último trabajo, ¿en qué momento lo empezó?'
+        : (v('C1')===1 ? 'Comparando su trabajo antes de la maestría con el actual, ¿en qué momento cambió de empleador? Si cambió más de una vez, piense en el cambio más importante.'
+                       : '¿En qué momento consiguió su trabajo actual?'),
+   opts:[[1,'Sigue con el mismo empleador'],...L.MOM,[7,'Antes de la maestría'],[98,'No recuerda']],
+   optWhen:{1:()=>v('C1')===1 && v('D1')===1, 7:()=>v('D1')!==1}},
+  {type:'radio', id:'E1_PNP', code:'E1-PNP', q:'Comparando su unidad antes de la maestría con la actual, ¿en qué momento cambió de unidad o fue reasignado/a? Si cambió más de una vez, piense en el cambio más importante.', when:()=>v('C2')===10 && v('D2')===10, opts:[[1,'Sigue en la misma unidad'],...L.MOM,[98,'No recuerda']]},
+  {type:'multi', id:'E2', code:'E2', q:'Desde que inició la maestría, ¿ha experimentado alguno de estos cambios en sus responsabilidades en el trabajo?', ins:'Leer. Puede marcar más de uno.', opts:[['E2a','Fue ascendido/a'],['E2b','Asumió personal o un equipo a cargo'],['E2c','Accedió a un puesto más relacionado con la gestión pública o las políticas públicas'],['E2d','Otro. Especificar'],['E2e','Ninguno']], excl:['E2e'], esp:{E2d:'E2d_esp'}},
+  {type:'radio', id:'E3', code:'E3', q:'De los cambios que acaba de mencionar, ¿en qué momento ocurrió el más importante?', when:()=>['E2a','E2b','E2c','E2d'].some(x=>v(x)===1), opts:[...L.MOM.map(([c,t])=>[c-1,t]),[98,'No recuerda']]}
+ ]},
+ {k:'F', t:'Calidad del empleo actual', items:[
+  {type:'grid', id:'F', code:'F', when:()=>v('D1')===1, q:'Ahora le haré unas preguntas sobre su actividad laboral principal actual. Para cada afirmación, dígame si está totalmente en desacuerdo, en desacuerdo, de acuerdo o totalmente de acuerdo.', ins:'Leer cada afirmación y marcar una respuesta por fila.',
+   rows:[['F1','Considero que mi situación laboral actual es estable'],['F2','Tengo autonomía para tomar decisiones en mi trabajo'],['F3','Estoy satisfecho/a con mi trabajo actual'],['F4','Mi formación es adecuada para las exigencias de mi puesto']],
+   cols:[[1,'Totalmente en desacuerdo'],[2,'En desacuerdo'],[3,'De acuerdo'],[4,'Totalmente de acuerdo'],[96,'No aplica'],[98,'No sabe / Prefiere no responder']]}
+ ]},
+ {k:'G', t:'Competencias profesionales', items:[
+  {type:'grid', id:'G1', code:'G1', q:'Al terminar la maestría, ¿cómo calificaría el nivel que ha alcanzado en cada una de las siguientes capacidades? Use una escala de 1 a 4, donde 1 significa "muy bajo" y 4 "muy alto".', ins:'Leer cada capacidad y marcar una respuesta por fila.',
+   rows:L.COMP.map(([s,t])=>['G1'+s,t]), cols:[[1,'Muy bajo'],[2,'Bajo'],[3,'Alto'],[4,'Muy alto'],[98,'No sabe / No responde']]},
+  {type:'grid', id:'G2', code:'G2',
+   qf:()=>`Ahora, pensando en ${v('D1')===1?'su trabajo actual':'su último trabajo'}, le mencionaré algunas capacidades. Para cada una, por favor indíqueme si la utiliza muy frecuentemente, con frecuencia, con poca frecuencia o si no la utiliza en su actividad laboral principal.`,
+   ins:'Leer cada capacidad y marcar una respuesta por fila.',
+   rows:L.COMP.map(([s,t])=>['G2'+s,t.split(':')[0]]), cols:[[4,'Muy frecuentemente'],[3,'Con frecuencia'],[2,'Con poca frecuencia'],[1,'No la utiliza']]}
+ ]},
+ {k:'H', t:'Aporte atribuido a la maestría', items:[
+  {type:'grid', id:'H1', code:'H1', q:'Pensando en su trayectoria desde que inició la maestría, ¿en qué medida considera que la MGPP contribuyó a los siguientes aspectos? Use una escala de 1 a 5, donde 1 significa "no contribuyó en absoluto" y 5 significa "contribuyó mucho".', ins:'Leer cada aspecto y marcar una respuesta por fila.',
+   rows:[['H1a','Mejorar su desempeño profesional'],['H1b','Acceder a nuevas oportunidades laborales'],['H1c','Obtener un ascenso o asumir mayores responsabilidades'],['H1d','Mejorar sus ingresos laborales'],['H1e','Ampliar su red de contactos profesionales']],
+   cols:[[1,'No contribuyó en absoluto'],[2,'Contribuyó poco'],[3,'Contribuyó algo'],[4,'Contribuyó bastante'],[5,'Contribuyó mucho'],[96,'No aplica'],[98,'No sabe']]},
+  {type:'multi', id:'H2', code:'H2', q:'Le leeré algunos elementos de la maestría. Por favor, indíqueme los 3 elementos que contribuyeron más a su desarrollo profesional.', ins:'Leer. Marcar 3 como máximo.', max:3,
+   opts:[['H2a','Contenidos y metodologías de análisis'],['H2b','Calidad y experiencia de los docentes'],['H2c','Intercambio con compañeros/as y red profesional'],['H2d','Prestigio de la PUCP'],['H2e','Flexibilidad de la modalidad'],['H2f','Otro. Especificar'],['H2g','Ninguno en particular (no leer)']], excl:['H2g'], esp:{H2f:'H2f_esp'}}
+ ]},
+ {k:'I', t:'Satisfacción y recomendación', items:[
+  {type:'scale', id:'I1', code:'I1', q:'En una escala de 0 a 10, donde 0 significa "nada satisfecho/a" y 10 "totalmente satisfecho/a", ¿qué tan satisfecho/a está, en general, con la MGPP?', ends:['Nada satisfecho/a','Totalmente satisfecho/a']},
+  {type:'scale', id:'I2', code:'I2', q:'En una escala de 0 a 10, donde 0 significa "nada probable" y 10 "totalmente probable", ¿qué tan probable es que recomiende la MGPP de la PUCP a un colega o conocido?', ends:['Nada probable','Totalmente probable']},
+  {type:'textarea', id:'I3', code:'I3', q:'Pensando en su experiencia profesional, ¿cuál considera que es la principal fortaleza de la MGPP?', ins:'Pregunta abierta. Anotar textualmente.', nr:['98','No sabe / No responde']},
+  {type:'multi', id:'I4', code:'I4', q:'Pensando en su trabajo actual y en los retos de su trayectoria profesional, ¿en cuáles de las siguientes áreas considera que la MGPP debería profundizar o fortalecer la formación?', ins:'Leer. Marcar 2 como máximo.', max:2,
+   opts:[['I4a','Diseño e implementación de políticas públicas'],['I4b','Monitoreo y evaluación de políticas y programas'],['I4c','Análisis de datos y estadística'],['I4d','Gestión pública y presupuesto'],['I4e','Liderazgo y negociación'],['I4f','Innovación pública y transformación digital'],['I4g','Comunicación de políticas públicas'],['I4h','Otro. Especificar'],['I4i','Ninguna (no leer)']], excl:['I4i'], esp:{I4h:'I4h_esp'}}
+ ]},
+ {k:'J', t:'Comunidad Alumni y proyección', items:[
+  {type:'radio', id:'J1', code:'J1', q:'¿Qué tan interesado/a estaría en participar en una comunidad Alumni de la MGPP?', ins:'Leer opciones.', opts:[[1,'Nada interesado/a'],[2,'Poco interesado/a'],[3,'Algo interesado/a'],[4,'Bastante interesado/a'],[5,'Muy interesado/a'],[98,'No sabe / No responde (no leer)']]},
+  {type:'multi', id:'J2', code:'J2', q:'¿Qué beneficios, servicios o actividades valoraría más en una comunidad Alumni de la MGPP?', ins:'Leer. Marcar 2 como máximo.', max:2, when:()=>inn('J1',[3,4,5]),
+   opts:[['J2a','Networking y contacto con egresados/as y docentes'],['J2b','Oportunidades laborales y convocatorias'],['J2c','Descuentos en cursos y educación continua'],['J2d','Reconocimiento de logros de egresados/as'],['J2e','Otro. Especificar']], esp:{J2e:'J2e_esp'}},
+  {type:'multi', id:'J3', code:'J3', q:'Además de participar como miembro, ¿de qué maneras estaría dispuesto/a a contribuir a una comunidad Alumni de la MGPP?', ins:'Leer. Puede marcar todas las que correspondan.', when:()=>inn('J1',[3,4,5]),
+   opts:[['J3a','Dar charlas o participar en paneles'],['J3b','Ser mentor/a y compartir su experiencia profesional con estudiantes o egresados/as recientes'],['J3c','Compartir oportunidades laborales o convocatorias'],['J3d','Apoyar la difusión o admisión de la MGPP en redes sociales y la página web'],['J3e','Otro. Especificar'],['J3f','Por el momento, no estaría dispuesto/a a contribuir']], excl:['J3f'], esp:{J3e:'J3e_esp'}},
+  {type:'radio', id:'J4', code:'J4', q:'¿Por qué canal preferiría recibir información de la comunidad Alumni?', opts:[[1,'Correo electrónico'],[2,'LinkedIn'],[3,'WhatsApp'],[4,'Facebook'],[5,'Instagram'],[95,'Otro. Especificar']], esp:{95:'J4_esp'}}
+ ]},
+ {k:'Z', t:'Cierre', items:[
+  {type:'read', html:'<p>Hemos terminado la encuesta. Muchas gracias por su tiempo y por compartir su experiencia.</p>'},
+  {type:'textarea', id:'OBS', code:'', q:'Observaciones del encuestador/a', ins:'Opcional.', optional:true}
+ ]}
+];
+// Las secciones P a Z solo se aplican si la persona aceptó participar.
+S.forEach(s=>{ if(!'AB'.includes(s.k)) s.items.forEach(it=>{ const w=it.when; it.when = w ? ()=>ACC() && w() : ACC; }); });
+
+const HEADERS = ["id_registro","version_form","encuestador","fecha_llamada","hora_inicio","hora_fin","modo_envio","ts_envio","A0_1","A0_2","A0_3","A0_4","A0_5","A0_6","B0","B0_cita","P1","P2","P2_esp","P3","P3_esp","P4","P5","P5_esp","P6","P7","P8","P9","P9_esp","C1","C2","C2_esp","C3","C4_txt","C4","C4_esp","C5_txt","C5","C5_esp","C6","C6_esp","CP1","CP2","CP3_txt","CP3","CP3_esp","CP4","CP4_esp","C7","D1","D2","D2_esp","D3","D4_txt","D4","D4_esp","D5_txt","D5","D5_esp","D6","D6_esp","DP1","DP2","DP3_txt","DP3","DP3_esp","DP4","DP4_esp","D7","D8","D9","E1","E1_PNP","E2a","E2b","E2c","E2d","E2e","E2d_esp","E3","F1","F2","F3","F4","G1a","G1b","G1c","G1d","G1e","G1f","G1g","G2a","G2b","G2c","G2d","G2e","G2f","G2g","H1a","H1b","H1c","H1d","H1e","H2a","H2b","H2c","H2d","H2e","H2f","H2g","H2f_esp","I1","I2","I3","I4a","I4b","I4c","I4d","I4e","I4f","I4g","I4h","I4i","I4h_esp","J1","J2a","J2b","J2c","J2d","J2e","J2e_esp","J3a","J3b","J3c","J3d","J3e","J3f","J3e_esp","J4","J4_esp","Z1","Z1_ult","OBS"];
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+let R = {};            // respuestas
+let META = {};         // metadatos del registro
+let AUTO = {};         // valores puestos automáticamente
+let TOUCH = {};        // variables modificadas por el encuestador
+let CUR = 0;           // sección actual (índice en S)
+const $ = id => document.getElementById(id);
+const LS = {
+  get:(k,d)=>{ try{ const x=localStorage.getItem(k); return x?JSON.parse(x):d; }catch(e){ return d; } },
+  set:(k,x)=>{ try{ localStorage.setItem(k,JSON.stringify(x)); }catch(e){ alert('No se pudo guardar en este equipo. Libere espacio o descargue el respaldo.'); } },
+  del:k=>{ try{ localStorage.removeItem(k); }catch(e){} }
+};
+const K_SES='mgpp_sesion', K_COLA='mgpp_cola', K_BORR='mgpp_borrador';
+
+/* Variables que maneja cada ítem */
+function varsOf(it){
+  const out=[];
+  if(it.type==='grid') it.rows.forEach(r=>out.push(r[0]));
+  else if(it.type==='multi') it.opts.forEach(o=>out.push(o[0]));
+  else if(it.id) out.push(it.id);
+  if(it.txt) out.push(it.txt);
+  if(it.esp) Object.values(it.esp).forEach(x=>{ if(!out.includes(x)) out.push(x); });
+  return out;
+}
+const visible = it => !it.when || !!it.when();
+const optVisible = (it,c) => !(it.optWhen && it.optWhen[c]) || it.optWhen[c]();
+
+/* Limpia valores de preguntas que dejaron de aplicar y pone valores automáticos */
+function prune(){
+  for(let pass=0; pass<4; pass++){
+    S.forEach(s=>s.items.forEach(it=>{
+      const vis=visible(it);
+      if(!vis){ varsOf(it).forEach(x=>{ if(!AUTO[x]) delete R[x]; }); return; }
+      if(it.optWhen && has(it.id) && !optVisible(it,R[it.id])) delete R[it.id];
+      if(it.esp) Object.entries(it.esp).forEach(([c,x])=>{
+        const on = it.type==='multi' ? R[c]===1 : String(R[it.id])===String(c);
+        const shared = Object.entries(it.esp).some(([c2,x2])=>x2===x && (it.type==='multi'?R[c2]===1:String(R[it.id])===String(c2)));
+        if(!on && !shared) delete R[x];
+      });
+    }));
+    // C5/D5 = 7 para independientes
+    [['C2','C5','C1'],['D2','D5','D1']].forEach(([org,car,trab])=>{
+      if(R[trab]===1 && R[org]===9){ R[car]=7; AUTO[car]=true; }
+      else if(AUTO[car]){ delete R[car]; delete AUTO[car]; }
+    });
+    // C2 = 10 preseleccionado si figura como policía
+    if(R.A0_2===1 && R.C1===1 && !has('C2') && !TOUCH.C2) R.C2=10;
+  }
+}
+
+/* Fin del flujo antes de la encuesta */
+function terminal(){
+  if(R.A0_4===2 && has('A0_5')) return true;
+  if(R.A0_6===2) return true;
+  if(R.B0===2) return true;
+  if(R.B0===3 && has('B0_cita')) return true;
+  return false;
+}
+function secVisible(i){ return S[i].items.some(visible); }
+function visibleSections(){
+  const out=[];
+  for(let i=0;i<S.length;i++){
+    if(!secVisible(i)) continue;
+    out.push(i);
+    if(terminal() && i>=1 && !ACC()) break;
+  }
+  return out;
+}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function qhead(it){
+  const text = it.qf ? it.qf() : (it.q||'');
+  return `<div class="qtext">${it.code?`<span class="qcode">${esc(it.code)}</span>`:''}${esc(text)}</div>${it.ins?`<span class="ins">${esc(it.ins)}</span>`:''}`;
+}
+function espInput(name){
+  return `<div class="esp"><input type="text" data-text="${name}" value="${esc(R[name]??'')}" placeholder="Especificar" aria-label="Especificar"></div>`;
+}
+function renderItem(it){
+  const box=document.createElement('div');
+  box.className='item'; if(it.id) box.dataset.item=it.id;
+  let h='';
+  switch(it.type){
+    case 'read': box.innerHTML=`<div class="read">${it.html}</div>`; return box;
+    case 'note': box.innerHTML=`<div class="note">${esc(it.html)}</div>`; return box;
+    case 'radio': case 'precoded': {
+      h=qhead(it);
+      if(it.type==='precoded') h+=`<label class="field" for="t_${it.txt}">${esc(it.label)} (tal como lo dice)</label><input id="t_${it.txt}" type="text" data-text="${it.txt}" value="${esc(R[it.txt]??'')}">`;
+      h+=`<div class="opts${it.two?' two':''}" role="radiogroup">`;
+      it.opts.forEach(([c,t])=>{
+        if(!optVisible(it,c)) return;
+        const sel=R[it.id]===c;
+        h+=`<label class="opt${sel?' sel':''}"><input type="radio" name="${it.id}" value="${c}" ${sel?'checked':''}><span class="code">${c}</span><span>${esc(t)}</span></label>`;
+        if(sel && it.esp && it.esp[c]) h+=espInput(it.esp[c]);
+      });
+      h+='</div>'; break;
+    }
+    case 'multi': {
+      h=qhead(it)+'<div class="opts">';
+      it.opts.forEach(([x,t])=>{
+        const sel=R[x]===1;
+        h+=`<label class="opt box${sel?' sel':''}"><input type="checkbox" data-multi="${it.id}" name="${x}" ${sel?'checked':''}><span class="code">${x.slice(-1)}</span><span>${esc(t)}</span></label>`;
+        if(sel && it.esp && it.esp[x]) h+=espInput(it.esp[x]);
+      });
+      h+='</div>'; break;
+    }
+    case 'grid': {
+      h=qhead(it)+'<div class="gridwrap"><table class="grid"><thead><tr><th></th>';
+      it.cols.forEach(([c,t])=>h+=`<th scope="col">${esc(t)}</th>`);
+      h+='</tr></thead><tbody>';
+      it.rows.forEach(([x,t])=>{
+        h+=`<tr data-row="${x}"><td class="lab"><b>${x}</b>${esc(t)}</td>`;
+        it.cols.forEach(([c,ct])=>{ const sel=R[x]===c;
+          h+=`<td><label class="cell${sel?' sel':''}" title="${esc(ct)}"><input type="radio" name="${x}" value="${c}" ${sel?'checked':''} aria-label="${esc(t)}: ${esc(ct)}">${c}</label></td>`; });
+        h+='</tr>';
+      });
+      h+='</tbody></table></div>'; break;
+    }
+    case 'scale': {
+      h=qhead(it)+'<div class="scale">';
+      for(let i=0;i<=10;i++){ const sel=R[it.id]===i; h+=`<label class="${sel?'sel':''}"><input type="radio" name="${it.id}" value="${i}" ${sel?'checked':''}>${i}</label>`; }
+      const s98=R[it.id]===98; h+=`<label class="wide${s98?' sel':''}"><input type="radio" name="${it.id}" value="98" ${s98?'checked':''}>No sabe (98)</label></div>`;
+      h+=`<div class="scale-ends"><span>0 = ${esc(it.ends[0])}</span><span>10 = ${esc(it.ends[1])}</span></div>`; break;
+    }
+    case 'text': case 'textarea': case 'number': case 'datetime': {
+      h=qhead(it);
+      const isNR = it.nr && String(R[it.id])===String(it.nr[0]);
+      const val = isNR ? '' : (R[it.id]??'');
+      if(it.type==='textarea') h+=`<textarea data-text="${it.id}" ${isNR?'disabled':''}>${esc(val)}</textarea>`;
+      else if(it.type==='number') h+=`<div class="row"><input type="number" inputmode="numeric" data-num="${it.id}" min="${it.min}" max="${it.max}" value="${esc(val)}" ${isNR?'disabled':''}>${it.unit?`<span>${it.unit}</span>`:''}</div>`;
+      else if(it.type==='datetime') h+=`<input type="datetime-local" data-text="${it.id}" value="${esc(val)}" style="max-width:280px">`;
+      else h+=`<input type="text" data-text="${it.id}" value="${esc(val)}" ${isNR?'disabled':''}>`;
+      if(it.nr) h+=`<label class="nr"><input type="checkbox" data-nr="${it.id}" ${isNR?'checked':''}> ${esc(it.nr[1])} (${it.nr[0]})</label>`;
+      break;
+    }
+  }
+  box.innerHTML=h; return box;
+}
+
+function render(){
+  prune();
+  const vs=visibleSections();
+  if(!vs.includes(CUR)) CUR = vs.filter(i=>i<CUR).pop() ?? vs[0];
+  const s=S[CUR];
+  $('secLetter').textContent=s.k; $('secTitle').textContent=s.t;
+  const body=$('secBody'); body.innerHTML='';
+  s.items.filter(visible).forEach(it=>body.appendChild(renderItem(it)));
+  // navegación lateral
+  const nav=$('navList'); nav.innerHTML='';
+  S.forEach((x,i)=>{
+    const li=document.createElement('li');
+    const on=vs.includes(i);
+    li.className = i===CUR ? 'current' : (on ? (vs.indexOf(i)<vs.indexOf(CUR)?'done':'') : 'skip');
+    li.innerHTML=`<b>${x.k}</b><span>${esc(x.t)}</span>`; nav.appendChild(li);
+  });
+  const pos=vs.indexOf(CUR), last = pos===vs.length-1;
+  $('progress').style.width = Math.round(((pos+1)/vs.length)*100)+'%';
+  $('btnPrev').disabled = pos<=0;
+  $('btnNext').textContent = last ? 'Guardar registro' : 'Siguiente';
+  $('btnIncompleta').classList.toggle('hidden', !ACC() || S[CUR].k==='Z');
+  $('footHint').textContent = R.A0_1 ? `Código ${R.A0_1}` : '';
+  saveDraft();
+}
+
+/* =========================================================
+   EVENTOS DEL FORMULARIO
+   ========================================================= */
+function findItem(id){ for(const s of S) for(const it of s.items) if(it.id===id) return it; return null; }
+$('secBody').addEventListener('change', e=>{
+  const el=e.target;
+  if(el.type==='radio'){ R[el.name]=Number(el.value); TOUCH[el.name]=true; if(AUTO[el.name]) delete AUTO[el.name]; render(); return; }
+  if(el.dataset.multi){
+    const it=findItem(el.dataset.multi);
+    it.opts.forEach(([x])=>{ if(R[x]===undefined) R[x]=0; });
+    R[el.name]=el.checked?1:0;
+    if(el.checked && it.excl){
+      if(it.excl.includes(el.name)) it.opts.forEach(([x])=>{ if(x!==el.name) R[x]=0; });
+      else it.excl.forEach(x=>R[x]=0);
+    }
+    if(it.max){
+      const n=it.opts.filter(([x])=>R[x]===1 && !(it.excl||[]).includes(x)).length;
+      if(n>it.max){ R[el.name]=0; alert(`Máximo ${it.max} opciones.`); }
+    }
+    render(); return;
+  }
+  if(el.dataset.nr){
+    const it=findItem(el.dataset.nr);
+    if(el.checked) R[it.id] = typeof it.nr[0]==='number' ? it.nr[0] : String(it.nr[0]); else delete R[it.id];
+    render(); return;
+  }
+  if(el.dataset.text){ const x=el.value.trim(); if(x) R[el.dataset.text]=x; else delete R[el.dataset.text]; render(); return; }
+  if(el.dataset.num){ const x=el.value.trim(); if(x==='') delete R[el.dataset.num]; else R[el.dataset.num]=Number(x); render(); return; }
+});
+$('secBody').addEventListener('input', e=>{
+  const el=e.target;
+  if(el.dataset.text){ const x=el.value.trim(); if(x) R[el.dataset.text]=x; else delete R[el.dataset.text]; saveDraft(); }
+  if(el.dataset.num){ const x=el.value.trim(); if(x==='') delete R[el.dataset.num]; else R[el.dataset.num]=Number(x); saveDraft(); }
+});
+
+/* Validación de la sección actual */
+function validate(){
+  const errs=[];
+  document.querySelectorAll('.item.invalid').forEach(x=>x.classList.remove('invalid'));
+  document.querySelectorAll('tr.missing').forEach(x=>x.classList.remove('missing'));
+  document.querySelectorAll('.err-text').forEach(x=>x.remove());
+  S[CUR].items.filter(visible).forEach(it=>{
+    if(['read','note'].includes(it.type) || it.optional) return;
+    let msg='';
+    if(it.type==='grid'){
+      const miss=it.rows.filter(([x])=>!has(x)).map(r=>r[0]);
+      if(miss.length){ msg='Falta responder: '+miss.join(', '); miss.forEach(x=>document.querySelector(`tr[data-row="${x}"]`)?.classList.add('missing')); }
+    } else if(it.type==='multi'){
+      if(!it.opts.some(([x])=>R[x]===1)) msg='Marque al menos una opción.';
+    } else if(!has(it.id)) msg='Falta responder.';
+    else if(it.type==='number' && !(it.nr && R[it.id]===it.nr[0])){
+      const n=R[it.id]; if(!Number.isInteger(n) || n<it.min || n>it.max) msg=`Ingrese un número entre ${it.min} y ${it.max}.`;
+    }
+    if(!msg && it.txt && !has(it.txt)) msg='Anote la respuesta tal como la dice la persona.';
+    if(!msg && it.esp){
+      const pend=Object.entries(it.esp).find(([c,x])=> (it.type==='multi'?R[c]===1:String(R[it.id])===String(c)) && !has(x));
+      if(pend) msg='Falta especificar.';
+    }
+    if(msg){
+      errs.push(it.code||it.id);
+      const box=document.querySelector(`.item[data-item="${it.id}"]`);
+      if(box){ box.classList.add('invalid'); const d=document.createElement('div'); d.className='err-text'; d.textContent=msg; box.appendChild(d); }
+    }
+  });
+  if(errs.length){ const first=document.querySelector('.item.invalid'); first?.scrollIntoView({behavior:'smooth',block:'center'}); }
+  return errs.length===0;
+}
+
+$('btnNext').addEventListener('click', ()=>{
+  if(!validate()) return;
+  const vs=visibleSections(), pos=vs.indexOf(CUR);
+  if(pos===vs.length-1){ finish(ACC() ? 1 : null); return; }
+  CUR=vs[pos+1]; render(); window.scrollTo({top:0});
+});
+$('btnPrev').addEventListener('click', ()=>{
+  const vs=visibleSections(), pos=vs.indexOf(CUR);
+  if(pos>0){ CUR=vs[pos-1]; render(); window.scrollTo({top:0}); }
+});
+$('btnIncompleta').addEventListener('click', ()=>{
+  if(!confirm('La encuesta se guardará como incompleta con las respuestas registradas hasta ahora. ¿Continuar?')) return;
+  finish(2);
+});
+
+/* =========================================================
+   GUARDADO Y ENVÍO
+   ========================================================= */
+const pad=n=>String(n).padStart(2,'0');
+const today=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const hhmm=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const uuid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2));
+
+function startRecord(){
+  const now=new Date(), ses=LS.get(K_SES,{});
+  R={}; AUTO={}; TOUCH={}; CUR=0;
+  META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now)};
+  show('scrForm'); render(); window.scrollTo({top:0});
+}
+function saveDraft(){ if(META.id_registro) LS.set(K_BORR,{R,META,AUTO,TOUCH,CUR}); }
+
+function finish(z1){
+  prune();
+  const rec={...META, hora_fin:hhmm(new Date()), modo_envio:1};
+  if(z1){ R.Z1=z1; if(z1===2){ const last=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop(); R.Z1_ult=last||''; } else delete R.Z1_ult; }
+  // las preguntas múltiples aplicadas guardan 0 en las opciones no marcadas
+  S.forEach(s=>s.items.forEach(it=>{ if(it.type==='multi' && visible(it) && it.opts.some(([x])=>has(x))) it.opts.forEach(([x])=>{ if(!has(x)) R[x]=0; }); }));
+  HEADERS.forEach(h=>{ if(!(h in rec)) rec[h] = has(h) ? R[h] : ''; });
+  rec.ts_envio='';
+  const cola=LS.get(K_COLA,[]); cola.push(rec); LS.set(K_COLA,cola);
+  LS.del(K_BORR); META={};
+  $('doneTitle').textContent='Registro guardado';
+  $('doneText').textContent = z1===1 ? 'La encuesta se completó.' : (z1===2 ? 'La encuesta se guardó como incompleta.' : 'Se registró el resultado de la llamada.');
+  $('doneList').innerHTML = `<li>Código de la persona egresada: <b>${esc(rec.A0_1)}</b></li><li>Intento: ${esc(rec.A0_3)}</li>`;
+  show('scrDone'); updateStatus(); sync();
+}
+
+let syncing=false;
+async function sync(){
+  updateStatus();
+  if(syncing || MODO_PRUEBA || !navigator.onLine) return;
+  const cola=LS.get(K_COLA,[]); if(!cola.length) return;
+  const ses=LS.get(K_SES,{}); syncing=true;
+  try{
+    const res=await fetch(CONFIG.SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({codigo:ses.codigo,registros:cola})});
+    const j=await res.json();
+    if(j.ok){
+      const ok=new Set(j.guardados||[]);
+      LS.set(K_COLA, LS.get(K_COLA,[]).filter(r=>!ok.has(r.id_registro)));
+    } else if(j.error==='codigo_invalido'){
+      flash('Tu código de acceso no está activo en el Sheets. Los registros siguen guardados en este equipo.');
+    }
+  }catch(err){
+    // sin conexión o error de red: los registros quedan como pendientes y se marcan como envío diferido
+    LS.set(K_COLA, LS.get(K_COLA,[]).map(r=>({...r, modo_envio:2})));
+  }finally{ syncing=false; updateStatus(); }
+}
+function flash(t){ const m=$('homeMsg'); m.className='msg err'; m.textContent=t; }
+
+function updateStatus(){
+  const on=navigator.onLine, n=LS.get(K_COLA,[]).length;
+  $('net').className=on?'online':''; $('netTxt').textContent = MODO_PRUEBA ? 'Modo de prueba' : (on?'En línea':'Sin conexión');
+  $('pend').textContent = n ? `${n} pendiente${n>1?'s':''} de envío` : 'Todo enviado';
+  $('btnSync').classList.toggle('hidden', !n || !on || MODO_PRUEBA);
+}
+
+/* =========================================================
+   SESIÓN Y PANTALLAS
+   ========================================================= */
+function show(id){
+  ['scrLogin','scrHome','scrForm','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
+  $('foot').classList.toggle('hidden', id!=='scrForm');
+  if(id!=='scrForm') $('progress').style.width='0';
+  const ses=LS.get(K_SES,null);
+  $('who').textContent = ses ? `Encuestador/a: ${ses.nombre||ses.codigo}` : '';
+  $('btnSalir').classList.toggle('hidden', !ses || id==='scrLogin');
+}
+function home(){
+  const d=LS.get(K_BORR,null);
+  $('btnContinuar').classList.toggle('hidden', !d);
+  $('draftBox').classList.toggle('hidden', !d);
+  if(d) $('draftBox').textContent=`Hay un registro sin terminar (código ${d.R.A0_1||'sin código'}, iniciado a las ${d.META.hora_inicio}).`;
+  show('scrHome'); updateStatus();
+}
+$('btnLogin').addEventListener('click', async ()=>{
+  const c=$('inCodigo').value.trim(), m=$('loginMsg'); m.className=''; m.textContent='';
+  if(!c){ m.className='msg err'; m.textContent='Ingrese su código de acceso.'; return; }
+  if(MODO_PRUEBA){ LS.set(K_SES,{codigo:c,nombre:c+' (prueba)'}); home(); return; }
+  if(!navigator.onLine){ m.className='msg err'; m.textContent='El primer ingreso necesita conexión a internet para validar el código.'; return; }
+  try{
+    const res=await fetch(CONFIG.SCRIPT_URL+'?accion=verificar&codigo='+encodeURIComponent(c));
+    const j=await res.json();
+    if(j.ok){ LS.set(K_SES,{codigo:c,nombre:j.encuestador}); home(); }
+    else { m.className='msg err'; m.textContent='El código no está registrado o no está activo. Consulte con el equipo de investigación.'; }
+  }catch(e){ m.className='msg err'; m.textContent='No se pudo conectar con el Sheets. Revise la conexión e intente otra vez.'; }
+});
+$('inCodigo').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnLogin').click(); });
+$('btnSalir').addEventListener('click', ()=>{
+  if(LS.get(K_COLA,[]).length && !confirm('Hay registros pendientes de envío en este equipo. Se conservarán, pero necesitará volver a ingresar para enviarlos. ¿Salir?')) return;
+  LS.del(K_SES); show('scrLogin');
+});
+$('btnNueva').addEventListener('click', ()=>{
+  if(LS.get(K_BORR,null) && !confirm('Hay un registro sin terminar. Si inicia uno nuevo, ese registro se descarta. ¿Continuar?')) return;
+  LS.del(K_BORR); startRecord();
+});
+$('btnContinuar').addEventListener('click', ()=>{
+  const d=LS.get(K_BORR,null); if(!d) return;
+  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; show('scrForm'); render();
+});
+$('btnOtra').addEventListener('click', startRecord);
+$('btnSync').addEventListener('click', sync);
+$('btnRespaldo').addEventListener('click', ()=>{
+  const cola=LS.get(K_COLA,[]);
+  if(!cola.length){ const m=$('homeMsg'); m.className='msg info'; m.textContent='No hay registros pendientes.'; return; }
+  const blob=new Blob([JSON.stringify(cola,null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`respaldo_mgpp_${today(new Date())}.json`; a.click();
+});
+window.addEventListener('online', sync);
+window.addEventListener('offline', updateStatus);
+
+/* Inicio */
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js');
+if(LS.get(K_SES,null)) home(); else show('scrLogin');
+updateStatus(); sync(); setInterval(sync, 60000);
+</script>
+</body>
+</html>
