@@ -897,7 +897,7 @@ function renderContactos(){
   if(!c){ d.innerHTML=`<div class="empty"><b>Elige a una persona de la lista</b>Aquí verás sus datos, podrás marcar si es policía e iniciar la llamada.</div>`; return; }
   const p=esPnp(c), l=llamDe(c[CK]), n=l?l.intentos:0, cerr=l&&cerrado(l.estado);
   const info = l ? `${(ESTADO[l.estado]||['—'])[0]} · ${l.intentos} ${l.intentos>1?'intentos':'intento'} · ${l.fecha} ${l.hora}${l.estado==='cita'&&l.cita?' · cita: '+String(l.cita).replace('T',' '):''}` : 'Aún no se ha llamado a esta persona.';
-  const btn = cerr ? 'Registrar otra llamada' : (n>=1 ? `Llamar de nuevo (intento ${Math.min(2,n+1)})` : 'Iniciar llamada');
+  const btn = cerr ? 'Registrar otra llamada' : (n>=1 ? `Llamar de nuevo (intento ${Math.min(2,n+1)})` : 'Iniciar encuesta');
   d.innerHTML=`<h2>${esc(c['Apellidos y nombres'])}</h2><div class="note">Código ${esc(c[CK])}${c['Celular (movil)']?' · Celular '+esc(c['Celular (movil)']):''}</div>
   <div class="estado ${l?(ESTADO[l.estado]||[0,''])[1]:''}">${esc(info)}</div>
   <div class="row" style="margin:14px 0 4px"><button type="button" class="btn big${cerr?' ghost':''}" id="btnIniciar">${btn}</button></div>
