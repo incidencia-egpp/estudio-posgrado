@@ -1,6 +1,6 @@
 // Service worker: permite abrir el formulario sin conexión.
 // Al publicar una versión nueva del formulario, cambiar VERSION para renovar la caché.
-const VERSION = 'mgpp-v1.0';
+const VERSION = 'mgpp-v1.5';
 const ARCHIVOS = ['./', './index.html', './logo-egpp-blanco.png'];
 
 self.addEventListener('install', e => {

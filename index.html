@@ -122,7 +122,39 @@ table.grid tr.missing td.lab{color:#8E2233}
 .foot .hint{color:var(--slate);font-size:.88rem}
 .done-list{margin:16px 0 24px;padding:0;list-style:none}
 .done-list li{padding:6px 0;border-bottom:1px solid var(--tint);font-size:.95rem}
+/* Pestañas */
+.tabs{max-width:1240px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:#fff;opacity:.75;padding:8px 16px;cursor:pointer;font-weight:600;font-size:.92rem}
+.tabs button:hover:not(:disabled){opacity:1}
+.tabs button.on{opacity:1;border-bottom-color:var(--red)}
+.tabs button:disabled{opacity:.35;cursor:not-allowed}
+/* Contactos */
+.clayout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:24px;align-items:start;margin-top:18px}
+.clist{padding:12px;max-height:calc(100vh - 260px);overflow:auto}
+.citem{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.citem:hover{border-color:var(--slate)}
+.citem.on{border-color:var(--navy);box-shadow:inset 4px 0 0 var(--red)}
+.citem b{display:block;color:var(--navy);font-size:.95rem}
+.citem small{color:var(--slate)}
+.badge{display:inline-block;font-size:.72rem;font-weight:700;border-radius:4px;padding:1px 7px;margin:4px 4px 0 0;background:var(--tint);color:var(--navy)}
+.badge.pnp{background:var(--navy);color:#fff}
+.badge.ok{background:#E2F2EA;color:var(--ok)}
+.cdetail h2{margin-bottom:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0 4px}
+.seg button{border:0;background:#fff;padding:9px 18px;cursor:pointer;font-weight:600}
+.seg button.sel{background:var(--navy);color:#fff}
+.dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 20px;margin:10px 0 6px}
+.dl div span{display:block;font-size:.78rem;color:var(--slate)}
+.dl div b{font-weight:600;word-break:break-word}
+h3.sub{font-size:1rem;color:var(--navy);margin:24px 0 0;padding-top:16px;border-top:1px solid var(--tint)}
+.side{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:.85rem}
+.side h4{margin:0 0 8px;color:var(--navy);font-size:.9rem}
+.side dl{margin:0}.side dt{color:var(--slate);font-size:.75rem;margin-top:6px}.side dd{margin:0;font-weight:600}
+nav.sections{max-height:calc(100vh - 110px);overflow:auto}
 @media (max-width:860px){
+  .clayout{grid-template-columns:1fr}
+  .clist{max-height:320px}
+  .tabs{padding:0 12px}
   .layout{grid-template-columns:1fr}
   nav.sections{position:static}
   nav.sections ol{display:flex;gap:4px;overflow-x:auto}
@@ -148,6 +180,10 @@ table.grid tr.missing td.lab{color:#8E2233}
       <span id="who"></span>
       <button id="btnSalir" class="hidden" type="button">Salir</button>
     </div>
+  </div>
+  <div class="tabs hidden" id="tabs">
+    <button type="button" id="tabHome">Registro de llamadas</button>
+    <button type="button" id="tabCont">Contactos</button>
   </div>
   <div class="stripe"><span id="progress"></span></div>
 </header>
@@ -178,12 +214,28 @@ table.grid tr.missing td.lab{color:#8E2233}
     <div id="homeMsg"></div>
   </section>
 
+  <!-- Contactos -->
+  <section id="scrContactos" class="hidden">
+    <h1>Mis contactos</h1>
+    <p class="lead" id="cLead"></p>
+    <div class="row">
+      <input type="text" id="cBuscar" placeholder="Buscar por nombre, código o teléfono" style="max-width:380px" aria-label="Buscar contacto">
+      <button class="btn ghost" id="btnCRefresh" type="button">Actualizar lista</button>
+    </div>
+    <div id="cMsg"></div>
+    <div class="clayout">
+      <div class="card clist" id="cList"></div>
+      <div class="card cdetail" id="cDetail"></div>
+    </div>
+  </section>
+
   <!-- Formulario -->
   <section id="scrForm" class="hidden">
     <div class="layout">
       <nav class="sections" aria-label="Secciones">
         <ol id="navList"></ol>
         <div class="legend">Texto normal: se lee a la persona.<br><i>Texto en cursiva gris: indicación para el encuestador; no se lee.</i></div>
+        <div class="side hidden" id="sidePanel"></div>
       </nav>
       <div class="card">
         <div class="sechead"><span class="letter" id="secLetter"></span><h2 id="secTitle"></h2></div>
@@ -217,8 +269,11 @@ table.grid tr.missing td.lab{color:#8E2233}
    ========================================================= */
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzveEJfhjhjusRqwlBREcdT07ptXXbUMBlgIz6TbKJDwnukjvgxvOoBoIhezO8Fp-AFSg/exec',   // termina en /exec
-  VERSION: 'v1.0'
+  VERSION: 'v1.0',
+  // URL /exec del Apps Script que vive en el Sheets de contactos. Si queda vacía, se usan contactos de prueba (nombres inventados).
+  CONTACTOS_URL: 'https://script.google.com/macros/s/AKfycbznz_RHI0NZMrtfVAZysuH4swx86V6YeLH-sTPyE-OKzJZHHarIvygl8lGt1IHZDmBB9g/exec'
 };
+CONFIG.CONTACTOS_DEMO = !CONFIG.CONTACTOS_URL;
 const MODO_PRUEBA = !/^https:\/\/script\.google\.com\//.test(CONFIG.SCRIPT_URL);
 
 /* =========================================================
@@ -371,7 +426,7 @@ const LS = {
   set:(k,x)=>{ try{ localStorage.setItem(k,JSON.stringify(x)); }catch(e){ alert('No se pudo guardar en este equipo. Libere espacio o descargue el respaldo.'); } },
   del:k=>{ try{ localStorage.removeItem(k); }catch(e){} }
 };
-const K_SES='mgpp_sesion', K_COLA='mgpp_cola', K_BORR='mgpp_borrador';
+const K_SES='mgpp_sesion', K_COLA='mgpp_cola', K_BORR='mgpp_borrador', K_CONT='mgpp_contactos', K_PNP='mgpp_pnp';
 
 /* Variables que maneja cada ítem */
 function varsOf(it){
@@ -404,6 +459,8 @@ function prune(){
       if(R[trab]===1 && R[org]===9){ R[car]=7; AUTO[car]=true; }
       else if(AUTO[car]){ delete R[car]; delete AUTO[car]; }
     });
+    // A0_2 según lo marcado en la pestaña Contactos
+    if(has('A0_1') && !has('A0_2') && !TOUCH.A0_2){ const c=contactoDe(R.A0_1); if(c) R.A0_2=esPnp(c); }
     // C2 = 10 preseleccionado si figura como policía
     if(R.A0_2===1 && R.C1===1 && !has('C2') && !TOUCH.C2) R.C2=10;
   }
@@ -521,6 +578,7 @@ function render(){
   $('btnPrev').disabled = pos<=0;
   $('btnNext').textContent = last ? 'Guardar registro' : 'Siguiente';
   $('btnIncompleta').classList.toggle('hidden', !ACC() || S[CUR].k==='Z');
+  renderSide();
   $('footHint').textContent = R.A0_1 ? `Código ${R.A0_1}` : '';
   saveDraft();
 }
@@ -616,9 +674,16 @@ const today=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const hhmm=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const uuid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2));
 
-function startRecord(){
+function startRecord(c){
   const now=new Date(), ses=LS.get(K_SES,{});
   R={}; AUTO={}; TOUCH={}; CUR=0;
+  if(c){
+    R.A0_1=c['Código PUCP']; R.A0_2=esPnp(c);
+    const mod=String(c['Modalidad de la especialidad']||'').toUpperCase();
+    if(mod.includes('PRESENCIAL')){ R.P7=1; AUTO.P7=true; } else if(mod.includes('DISTANCIA')||mod.includes('VIRTUAL')){ R.P7=2; AUTO.P7=true; }
+    const y=Number(String(c['Ciclo de egreso']||'').slice(0,4));
+    if(y>=2021 && y<=2026){ R.P8=y; AUTO.P8=true; }
+  }
   META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now)};
   show('scrForm'); render(); window.scrollTo({top:0});
 }
@@ -673,12 +738,18 @@ function updateStatus(){
    SESIÓN Y PANTALLAS
    ========================================================= */
 function show(id){
-  ['scrLogin','scrHome','scrForm','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
+  ['scrLogin','scrHome','scrContactos','scrForm','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
   $('foot').classList.toggle('hidden', id!=='scrForm');
   if(id!=='scrForm') $('progress').style.width='0';
   const ses=LS.get(K_SES,null);
   $('who').textContent = ses ? `Encuestador/a: ${ses.nombre||ses.codigo}` : '';
   $('btnSalir').classList.toggle('hidden', !ses || id==='scrLogin');
+  $('tabs').classList.toggle('hidden', !ses || id==='scrLogin');
+  const enCurso = id==='scrForm';          // con una encuesta en curso las pestañas se bloquean
+  $('tabHome').disabled = $('tabCont').disabled = enCurso;
+  $('tabHome').title = $('tabCont').title = enCurso ? 'Termine o guarde la encuesta en curso para cambiar de pestaña' : '';
+  $('tabHome').classList.toggle('on', id==='scrHome' || id==='scrDone');
+  $('tabCont').classList.toggle('on', id==='scrContactos');
 }
 function home(){
   const d=LS.get(K_BORR,null);
@@ -702,7 +773,7 @@ $('btnLogin').addEventListener('click', async ()=>{
 $('inCodigo').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnLogin').click(); });
 $('btnSalir').addEventListener('click', ()=>{
   if(LS.get(K_COLA,[]).length && !confirm('Hay registros pendientes de envío en este equipo. Se conservarán, pero necesitará volver a ingresar para enviarlos. ¿Salir?')) return;
-  LS.del(K_SES); show('scrLogin');
+  LS.del(K_SES); LS.del(K_CONT); CONTACTOS=[]; show('scrLogin');
 });
 $('btnNueva').addEventListener('click', ()=>{
   if(LS.get(K_BORR,null) && !confirm('Hay un registro sin terminar. Si inicia uno nuevo, ese registro se descarta. ¿Continuar?')) return;
@@ -712,7 +783,7 @@ $('btnContinuar').addEventListener('click', ()=>{
   const d=LS.get(K_BORR,null); if(!d) return;
   R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; show('scrForm'); render();
 });
-$('btnOtra').addEventListener('click', startRecord);
+$('btnOtra').addEventListener('click', ()=>startRecord());
 $('btnSync').addEventListener('click', sync);
 $('btnRespaldo').addEventListener('click', ()=>{
   const cola=LS.get(K_COLA,[]);
@@ -722,6 +793,114 @@ $('btnRespaldo').addEventListener('click', ()=>{
 });
 window.addEventListener('online', sync);
 window.addEventListener('offline', updateStatus);
+
+/* =========================================================
+   CONTACTOS (lista asignada a cada encuestador/a)
+   ========================================================= */
+let CONTACTOS=[], CSEL=null;
+const CK='Código PUCP';
+const contactoDe = cod => CONTACTOS.find(c=>String(c[CK])===String(cod));
+const esPnp = c => { const m=LS.get(K_PNP,{})[c[CK]]; return m ?? (c['Es PNP']==='Sí' ? 1 : 2); };
+const val = x => (x===undefined || x===null || x==='') ? '—' : String(x).replace(/T00:00:00.*$/,'');
+
+/* Datos de prueba: nombres inventados; la misma persona siempre recibe la misma lista */
+function demoContactos(codigo){
+  let h=0; for(const ch of String(codigo)) h=(h*31+ch.charCodeAt(0))>>>0;
+  const rnd=()=>{ h=(h*1664525+1013904223)>>>0; return h/4294967296; };
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const ape=['QUISPE','HUAMÁN','FLORES','RAMOS','CHÁVEZ','TORRES','MENDOZA','VARGAS','ROJAS','CASTILLO','SALAZAR','PAREDES','CÁRDENAS','LAZO','ZEVALLOS','BENAVIDES'];
+  const nom=['ANA LUCÍA','JOSÉ LUIS','MARÍA ELENA','CARLOS ALBERTO','ROSA MARÍA','JORGE','PATRICIA','MIGUEL ÁNGEL','CLAUDIA','RICARDO','SOFÍA','EDGAR','LUZ MARINA','HÉCTOR','VERÓNICA','DIEGO'];
+  const esp=['GOBIERNO Y POLÍTICAS PÚBLICAS','GESTIÓN PÚBLICA','POLÍTICAS SOCIALES'];
+  const rangos=['Coronel','Comandante','Mayor','Capitán','Suboficial Superior','Suboficial Técnico de Primera'];
+  const num=n=>String(Math.floor(rnd()*Math.pow(10,n))).padStart(n,'0');
+  const out=[];
+  for(let i=0;i<24;i++){
+    const ing=2018+Math.floor(rnd()*6), egr=ing+2+Math.floor(rnd()*2), grad=rnd()<.6, pnp=rnd()<.35;
+    const a1=pick(ape), a2=pick(ape), n=pick(nom), cod='20'+String(ing).slice(2)+num(4);
+    out.push({
+      'Código PUCP':cod, 'Apellidos y nombres':`${a1} ${a2}, ${n}`, 'Número de DNI':num(8), 'Sexo':rnd()<.5?'M':'F', 'Edad':32+Math.floor(rnd()*30),
+      'Especialidad':pick(esp), 'Modalidad de la especialidad':rnd()<.6?'PRESENCIAL':'A DISTANCIA',
+      'Ciclo de ingreso':`${ing}-${1+Math.floor(rnd()*2)}`, 'Ultimo ciclo matrículado':`${egr}-0`, 'Ciclo de egreso':`${egr}-${Math.floor(rnd()*3)}`,
+      'CRAEST':(40+rnd()*15).toFixed(2), 'Egresado o graduado':grad?'Graduado':'Egresado',
+      'Fecha de sustentación':grad?`${egr+1}-${pad(1+Math.floor(rnd()*12))}-${pad(1+Math.floor(rnd()*28))}`:null,
+      'Correo PUCP':`a${cod}@example.com`, 'Correo externo':`${n.split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}${num(3)}@example.com`,
+      'Celular (movil)':'9'+num(8), 'Teléfono (fijo)':rnd()<.3?'01'+num(7):null,
+      'Es PNP':pnp?'Sí':'No', 'Promoción(es) PNP':pnp?String(ing):null, 'Ciclo de matrícula en lista PNP':pnp?`${ing}-1`:null,
+      'Rango / cargo PNP':pnp?pick(rangos):null, 'Grupo PNP':pnp?pick(['Grupo A','Grupo B']):null, 'Horario PNP':pnp?pick(['Sábados','Noche']):null,
+      'Fecha de nacimiento':null, 'Estado en base histórica':grad||rnd()<.5?'En base histórica (egresado/graduado)':'Solo lista PNP', 'Archivo(s) fuente PNP':pnp?`Alumnos PNP Promoción ${ing}.xlsx`:null
+    });
+  }
+  return out;
+}
+
+async function cargarContactos(forzar){
+  const ses=LS.get(K_SES,null); if(!ses) return;
+  let guard=LS.get(K_CONT,null);
+  if(guard && (guard.codigo!==ses.codigo || !!guard.demo!==CONFIG.CONTACTOS_DEMO)) guard=null;   // otra persona o datos de prueba: no reutilizar
+  if(!forzar && guard){ CONTACTOS=guard.lista; return; }
+  const msg=$('cMsg'); msg.className=''; msg.textContent='';
+  try{
+    let lista;
+    if(CONFIG.CONTACTOS_DEMO) lista=demoContactos(ses.codigo);
+    else{
+      if(!navigator.onLine) throw new Error('offline');
+      const res=await fetch(CONFIG.CONTACTOS_URL+'?accion=contactos&codigo='+encodeURIComponent(ses.codigo));
+      const j=await res.json(); if(!j.ok) throw new Error(j.error||'error');
+      lista=j.contactos;
+    }
+    CONTACTOS=lista; LS.set(K_CONT,{codigo:ses.codigo,demo:CONFIG.CONTACTOS_DEMO,lista});
+  }catch(e){
+    CONTACTOS = guard ? guard.lista : [];
+    msg.className='msg err'; msg.textContent = CONTACTOS.length ? 'No se pudo actualizar; se muestra la última lista guardada en este equipo.' : 'No se pudo cargar la lista de contactos. Revise la conexión e intente otra vez.';
+  }
+}
+
+function dato(k,v){ return `<div><span>${esc(k)}</span><b>${esc(val(v))}</b></div>`; }
+function renderContactos(){
+  const ses=LS.get(K_SES,{}), q=$('cBuscar').value.trim().toLowerCase();
+  $('cLead').textContent = (CONFIG.CONTACTOS_DEMO?'Datos de prueba (nombres inventados). ':'') + `Personas asignadas a ${ses.nombre||ses.codigo}: ${CONTACTOS.length}.`;
+  const lista=CONTACTOS.filter(c=>!q || [c[CK],c['Apellidos y nombres'],c['Celular (movil)'],c['Teléfono (fijo)']].some(x=>String(x||'').toLowerCase().includes(q)));
+  $('cList').innerHTML = lista.length ? lista.map(c=>`<button type="button" class="citem${c[CK]===CSEL?' on':''}" data-cod="${esc(c[CK])}"><b>${esc(c['Apellidos y nombres'])}</b><small>${esc(c[CK])} · ${esc(val(c['Celular (movil)']))}</small><br>${esPnp(c)===1?'<span class="badge pnp">PNP</span>':''}<span class="badge${c['Egresado o graduado']==='Graduado'?' ok':''}">${esc(val(c['Egresado o graduado']))}</span></button>`).join('') : '<div class="note">Sin resultados.</div>';
+  const c=contactoDe(CSEL), d=$('cDetail');
+  if(!c){ d.innerHTML='<div class="note">Seleccione una persona de la lista para ver sus datos.</div>'; return; }
+  const p=esPnp(c);
+  d.innerHTML=`<h2>${esc(c['Apellidos y nombres'])}</h2><div class="note">Código ${esc(c[CK])}</div>
+  <h3 class="sub">¿Es policía (PNP)?</h3>
+  <div class="seg" role="group" aria-label="Es policía"><button type="button" data-pnp="1" class="${p===1?'sel':''}">Sí, es PNP</button><button type="button" data-pnp="2" class="${p===2?'sel':''}">No</button></div>
+  <div class="note">Si marca Sí, la encuesta abre las preguntas del módulo policial. En la base figura: ${esc(val(c['Es PNP']))}.</div>
+  <div class="row" style="margin-top:14px"><button type="button" class="btn" id="btnIniciar">Iniciar llamada</button></div>
+  <h3 class="sub">Contacto</h3><div class="dl">${dato('Celular',c['Celular (movil)'])}${dato('Teléfono fijo',c['Teléfono (fijo)'])}${dato('Correo PUCP',c['Correo PUCP'])}${dato('Correo externo',c['Correo externo'])}</div>
+  <h3 class="sub">Datos académicos</h3><div class="dl">${dato('Ciclo de ingreso',c['Ciclo de ingreso'])}${dato('Último ciclo matriculado',c['Ultimo ciclo matrículado'])}${dato('Ciclo de egreso',c['Ciclo de egreso'])}${dato('Egresado o graduado',c['Egresado o graduado'])}${dato('Fecha de sustentación',c['Fecha de sustentación'])}${dato('CRAEST',c['CRAEST'])}${dato('Especialidad',c['Especialidad'])}${dato('Modalidad',c['Modalidad de la especialidad'])}</div>
+  <h3 class="sub">Datos personales</h3><div class="dl">${dato('DNI',c['Número de DNI'])}${dato('Sexo',c['Sexo'])}${dato('Edad',c['Edad'])}${dato('Fecha de nacimiento',c['Fecha de nacimiento'])}</div>
+  <h3 class="sub">Policía Nacional del Perú (según la base)</h3><div class="dl">${dato('Promoción(es)',c['Promoción(es) PNP'])}${dato('Ciclo en lista PNP',c['Ciclo de matrícula en lista PNP'])}${dato('Rango / cargo',c['Rango / cargo PNP'])}${dato('Grupo',c['Grupo PNP'])}${dato('Horario',c['Horario PNP'])}</div>
+  <h3 class="sub">Origen</h3><div class="dl">${dato('Estado en base histórica',c['Estado en base histórica'])}${dato('Archivo(s) fuente PNP',c['Archivo(s) fuente PNP'])}</div>`;
+}
+async function abrirContactos(){
+  show('scrContactos'); await cargarContactos(false); renderContactos();
+}
+$('tabHome').addEventListener('click', home);
+$('tabCont').addEventListener('click', abrirContactos);
+$('btnCRefresh').addEventListener('click', async ()=>{ await cargarContactos(true); renderContactos(); });
+$('cBuscar').addEventListener('input', renderContactos);
+$('cList').addEventListener('click', e=>{ const b=e.target.closest('[data-cod]'); if(b){ CSEL=b.dataset.cod; renderContactos(); } });
+$('cDetail').addEventListener('click', e=>{
+  const c=contactoDe(CSEL); if(!c) return;
+  const b=e.target.closest('[data-pnp]');
+  if(b){ const m=LS.get(K_PNP,{}); m[c[CK]]=Number(b.dataset.pnp); LS.set(K_PNP,m); renderContactos(); return; }
+  if(e.target.id==='btnIniciar'){
+    if(LS.get(K_BORR,null) && !confirm('Hay un registro sin terminar. Si inicia uno nuevo, ese registro se descarta. ¿Continuar?')) return;
+    LS.del(K_BORR); startRecord(c);
+  }
+});
+
+/* Panel lateral con los datos académicos mientras se hace la encuesta */
+function renderSide(){
+  const c = has('A0_1') ? contactoDe(R.A0_1) : null, p=$('sidePanel');
+  p.classList.toggle('hidden', !c);
+  if(!c) return;
+  const f=(k,v)=>`<dt>${esc(k)}</dt><dd>${esc(val(v))}</dd>`;
+  p.innerHTML=`<h4>Datos del registro de egresados</h4><dl>${f('Persona',c['Apellidos y nombres'])}${f('Ciclo de ingreso',c['Ciclo de ingreso'])}${f('Ciclo de egreso',c['Ciclo de egreso'])}${f('Egresado o graduado',c['Egresado o graduado'])}${f('Fecha de sustentación',c['Fecha de sustentación'])}${f('Modalidad',c['Modalidad de la especialidad'])}${f('Es PNP',esPnp(c)===1?'Sí':'No')}</dl>`;
+}
 
 /* Inicio */
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js');
