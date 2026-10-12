@@ -122,12 +122,29 @@ table.grid tr.missing td.lab{color:#8E2233}
 .foot .hint{color:var(--slate);font-size:.88rem}
 .done-list{margin:16px 0 24px;padding:0;list-style:none}
 .done-list li{padding:6px 0;border-bottom:1px solid var(--tint);font-size:.95rem}
-/* Pestañas */
-.tabs{max-width:1240px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
-.tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:#fff;opacity:.75;padding:8px 16px;cursor:pointer;font-weight:600;font-size:.92rem}
-.tabs button:hover:not(:disabled){opacity:1}
-.tabs button.on{opacity:1;border-bottom-color:var(--red)}
-.tabs button:disabled{opacity:.35;cursor:not-allowed}
+/* Inicio / contactos */
+.hhead{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.hhead h1{margin:0}.hhead .lead{margin:2px 0 0}
+.stats{display:flex;gap:10px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 16px;text-align:center;min-width:92px}
+.stat b{display:block;font-size:1.5rem;line-height:1.1;color:var(--navy)}
+.stat span{font-size:.75rem;color:var(--slate)}
+.stat.ok b{color:var(--ok)}
+.draft{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#FFF4DD;border:1px solid #E9C46A;border-radius:10px;padding:12px 16px;margin-top:16px}
+.draft span{flex:1;min-width:200px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.toolbar input[type=text]{max-width:340px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--slate)}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.toolbar .spacer{flex:1}
+.estado{border-radius:8px;padding:10px 14px;margin:14px 0 4px;background:var(--tint);color:var(--slate);font-size:.92rem}
+.estado.ok{background:#E2F2EA;color:var(--ok)}.estado.warn{background:#FFF4DD;color:#8A5A00}.estado.no{background:#FBE9EC;color:#8E2233}.estado.info{background:#E8EDFA;color:var(--navy)}
+.empty{text-align:center;color:var(--slate);padding:40px 12px}
+.empty b{display:block;font-size:1.1rem;color:var(--navy);margin-bottom:4px}
+.pie{margin-top:26px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cdetail{scroll-margin-top:100px}
+.btn.big{padding:14px 26px;font-size:1.02rem}
 /* Contactos */
 .clayout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:24px;align-items:start;margin-top:18px}
 .clist{padding:12px;max-height:calc(100vh - 260px);overflow:auto}
@@ -139,6 +156,7 @@ table.grid tr.missing td.lab{color:#8E2233}
 .badge{display:inline-block;font-size:.72rem;font-weight:700;border-radius:4px;padding:1px 7px;margin:4px 4px 0 0;background:var(--tint);color:var(--navy)}
 .badge.pnp{background:var(--navy);color:#fff}
 .badge.ok{background:#E2F2EA;color:var(--ok)}
+.badge.warn{background:#FFF4DD;color:#8A5A00}.badge.no{background:#FBE9EC;color:#8E2233}.badge.info{background:#E8EDFA;color:var(--navy)}
 .cdetail h2{margin-bottom:2px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0 4px}
 .seg button{border:0;background:#fff;padding:9px 18px;cursor:pointer;font-weight:600}
@@ -154,7 +172,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
 @media (max-width:860px){
   .clayout{grid-template-columns:1fr}
   .clist{max-height:320px}
-  .tabs{padding:0 12px}
+  .stats{width:100%}.stat{flex:1}
   .layout{grid-template-columns:1fr}
   nav.sections{position:static}
   nav.sections ol{display:flex;gap:4px;overflow-x:auto}
@@ -181,10 +199,6 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
       <button id="btnSalir" class="hidden" type="button">Salir</button>
     </div>
   </div>
-  <div class="tabs hidden" id="tabs">
-    <button type="button" id="tabHome">Registro de llamadas</button>
-    <button type="button" id="tabCont">Contactos</button>
-  </div>
   <div class="stripe"><span id="progress"></span></div>
 </header>
 
@@ -199,33 +213,27 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     <div id="loginMsg"></div>
   </section>
 
-  <!-- Inicio -->
-  <section id="scrHome" class="card narrow hidden">
-    <h1>Registro de llamadas</h1>
-    <p class="lead">Cada llamada es un registro, aunque la persona no conteste. Los registros se guardan en este equipo y se envían al Sheets cuando hay conexión.</p>
-    <div id="draftBox" class="msg info hidden"></div>
-    <div class="row" style="margin-top:16px">
-      <button class="btn" id="btnNueva" type="button">Nueva llamada</button>
-      <button class="btn ghost hidden" id="btnContinuar" type="button">Continuar registro en curso</button>
+  <!-- Inicio: mis llamadas (lista de contactos + detalle + registro) -->
+  <section id="scrHome" class="hidden">
+    <div class="hhead">
+      <div><h1>Mis llamadas</h1><p class="lead" id="cLead"></p></div>
+      <div class="stats" id="stats"></div>
     </div>
-    <div class="row" style="margin-top:28px">
-      <button class="btn ghost" id="btnRespaldo" type="button">Descargar respaldo de pendientes</button>
+    <div id="draftBox" class="draft hidden"><span id="draftTxt"></span><button class="btn" id="btnContinuar" type="button">Continuar encuesta</button></div>
+    <div class="toolbar">
+      <input type="text" id="cBuscar" placeholder="Buscar por nombre, código o teléfono" aria-label="Buscar contacto">
+      <div class="chips" id="chips" role="group" aria-label="Filtrar"></div>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="btnCRefresh" type="button" title="Volver a pedir la lista al Sheets">Actualizar lista</button>
     </div>
-    <div id="homeMsg"></div>
-  </section>
-
-  <!-- Contactos -->
-  <section id="scrContactos" class="hidden">
-    <h1>Mis contactos</h1>
-    <p class="lead" id="cLead"></p>
-    <div class="row">
-      <input type="text" id="cBuscar" placeholder="Buscar por nombre, código o teléfono" style="max-width:380px" aria-label="Buscar contacto">
-      <button class="btn ghost" id="btnCRefresh" type="button">Actualizar lista</button>
-    </div>
-    <div id="cMsg"></div>
+    <div id="cMsg"></div><div id="homeMsg"></div>
     <div class="clayout">
       <div class="card clist" id="cList"></div>
       <div class="card cdetail" id="cDetail"></div>
+    </div>
+    <div class="pie">
+      <button class="btn ghost" id="btnNueva" type="button">Llamar a alguien que no está en mi lista</button>
+      <button class="btn ghost" id="btnRespaldo" type="button">Descargar respaldo de pendientes</button>
     </div>
   </section>
 
@@ -249,7 +257,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     <h1 id="doneTitle">Registro guardado</h1>
     <p class="lead" id="doneText"></p>
     <ul class="done-list" id="doneList"></ul>
-    <button class="btn" id="btnOtra" type="button">Nueva llamada</button>
+    <div class="row"><button class="btn" id="btnSig" type="button">Siguiente contacto pendiente</button><button class="btn ghost" id="btnOtra" type="button">Volver a mi lista</button></div>
   </section>
 </main>
 
@@ -427,6 +435,7 @@ const LS = {
   del:k=>{ try{ localStorage.removeItem(k); }catch(e){} }
 };
 const K_SES='mgpp_sesion', K_COLA='mgpp_cola', K_BORR='mgpp_borrador', K_CONT='mgpp_contactos', K_PNP='mgpp_pnp';
+const K_LLAM=()=>'mgpp_llam_'+(LS.get(K_SES,{}).codigo||'');
 
 /* Variables que maneja cada ítem */
 function varsOf(it){
@@ -679,6 +688,7 @@ function startRecord(c){
   R={}; AUTO={}; TOUCH={}; CUR=0;
   if(c){
     R.A0_1=c['Código PUCP']; R.A0_2=esPnp(c);
+    const ll=llamDe(c[CK]); if(!ll) R.A0_3=1; else if(!cerrado(ll.estado)) R.A0_3=Math.min(2,ll.intentos+1);
     const mod=String(c['Modalidad de la especialidad']||'').toUpperCase();
     if(mod.includes('PRESENCIAL')){ R.P7=1; AUTO.P7=true; } else if(mod.includes('DISTANCIA')||mod.includes('VIRTUAL')){ R.P7=2; AUTO.P7=true; }
     const y=Number(String(c['Ciclo de egreso']||'').slice(0,4));
@@ -698,10 +708,14 @@ function finish(z1){
   HEADERS.forEach(h=>{ if(!(h in rec)) rec[h] = has(h) ? R[h] : ''; });
   rec.ts_envio='';
   const cola=LS.get(K_COLA,[]); cola.push(rec); LS.set(K_COLA,cola);
+  const est = z1===1?'completa' : z1===2?'incompleta' : R.B0===2?'rechazo' : R.B0===3?'cita' : R.A0_6===2?'otra' : R.A0_4===2?'nocontesta' : 'incompleta';
+  const llm=LS.get(K_LLAM(),{}), prev=llm[rec.A0_1];
+  llm[rec.A0_1]={estado:est, intentos:(prev?prev.intentos:0)+1, fecha:today(new Date()), hora:hhmm(new Date()), cita:R.B0_cita||''};
+  LS.set(K_LLAM(),llm); if(contactoDe(rec.A0_1)) CSEL=String(rec.A0_1);
   LS.del(K_BORR); META={};
   $('doneTitle').textContent='Registro guardado';
   $('doneText').textContent = z1===1 ? 'La encuesta se completó.' : (z1===2 ? 'La encuesta se guardó como incompleta.' : 'Se registró el resultado de la llamada.');
-  $('doneList').innerHTML = `<li>Código de la persona egresada: <b>${esc(rec.A0_1)}</b></li><li>Intento: ${esc(rec.A0_3)}</li>`;
+  $('doneList').innerHTML = `<li>Código de la persona egresada: <b>${esc(rec.A0_1)}</b></li><li>Resultado: <b>${esc(ESTADO[est][0])}</b> · intento ${esc(rec.A0_3)}</li>`;
   show('scrDone'); updateStatus(); sync();
 }
 
@@ -738,25 +752,20 @@ function updateStatus(){
    SESIÓN Y PANTALLAS
    ========================================================= */
 function show(id){
-  ['scrLogin','scrHome','scrContactos','scrForm','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
+  ['scrLogin','scrHome','scrForm','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
   $('foot').classList.toggle('hidden', id!=='scrForm');
   if(id!=='scrForm') $('progress').style.width='0';
   const ses=LS.get(K_SES,null);
   $('who').textContent = ses ? `Encuestador/a: ${ses.nombre||ses.codigo}` : '';
   $('btnSalir').classList.toggle('hidden', !ses || id==='scrLogin');
-  $('tabs').classList.toggle('hidden', !ses || id==='scrLogin');
-  const enCurso = id==='scrForm';          // con una encuesta en curso las pestañas se bloquean
-  $('tabHome').disabled = $('tabCont').disabled = enCurso;
-  $('tabHome').title = $('tabCont').title = enCurso ? 'Termine o guarde la encuesta en curso para cambiar de pestaña' : '';
-  $('tabHome').classList.toggle('on', id==='scrHome' || id==='scrDone');
-  $('tabCont').classList.toggle('on', id==='scrContactos');
 }
-function home(){
+async function home(){
+  show('scrHome');
   const d=LS.get(K_BORR,null);
-  $('btnContinuar').classList.toggle('hidden', !d);
   $('draftBox').classList.toggle('hidden', !d);
-  if(d) $('draftBox').textContent=`Hay un registro sin terminar (código ${d.R.A0_1||'sin código'}, iniciado a las ${d.META.hora_inicio}).`;
-  show('scrHome'); updateStatus();
+  if(d) $('draftTxt').textContent=`Tienes una encuesta sin terminar (código ${d.R.A0_1||'sin código'}, iniciada a las ${d.META.hora_inicio}).`;
+  updateStatus(); renderContactos();           // dibuja lo guardado mientras llega la lista
+  await cargarContactos(false); renderContactos();
 }
 $('btnLogin').addEventListener('click', async ()=>{
   const c=$('inCodigo').value.trim(), m=$('loginMsg'); m.className=''; m.textContent='';
@@ -783,7 +792,14 @@ $('btnContinuar').addEventListener('click', ()=>{
   const d=LS.get(K_BORR,null); if(!d) return;
   R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; show('scrForm'); render();
 });
-$('btnOtra').addEventListener('click', ()=>startRecord());
+$('btnOtra').addEventListener('click', home);
+$('btnSig').addEventListener('click', ()=>{
+  const i=CONTACTOS.findIndex(c=>String(c[CK])===String(CSEL));
+  const orden=[...CONTACTOS.slice(i+1),...CONTACTOS.slice(0,Math.max(i,0)+1)];
+  const sig=orden.find(c=>String(c[CK])!==String(CSEL) && !cerrado((llamDe(c[CK])||{}).estado));
+  if(sig) CSEL=String(sig[CK]);
+  home();
+});
 $('btnSync').addEventListener('click', sync);
 $('btnRespaldo').addEventListener('click', ()=>{
   const cola=LS.get(K_COLA,[]);
@@ -801,7 +817,9 @@ let CONTACTOS=[], CSEL=null;
 const CK='Código PUCP';
 const contactoDe = cod => CONTACTOS.find(c=>String(c[CK])===String(cod));
 const esPnp = c => { const m=LS.get(K_PNP,{})[c[CK]]; return m ?? (c['Es PNP']==='Sí' ? 1 : 2); };
-const val = x => (x===undefined || x===null || x==='') ? '—' : String(x).replace(/T00:00:00.*$/,'');
+const vacio = x => x===undefined || x===null || String(x).trim()==='';
+const val = x => vacio(x) ? '—' : String(x).replace(/T\d\d:.*$/,'');
+const anio = x => vacio(x) ? '' : (String(x).match(/^\d{4}/)||[''])[0];      // "2021-1" o "2021-01-01T05:00:00Z" → "2021"
 
 /* Datos de prueba: nombres inventados; la misma persona siempre recibe la misma lista */
 function demoContactos(codigo){
@@ -855,40 +873,56 @@ async function cargarContactos(forzar){
   }
 }
 
-function dato(k,v){ return `<div><span>${esc(k)}</span><b>${esc(val(v))}</b></div>`; }
+const ESTADO={completa:['Completada','ok'],incompleta:['Incompleta','warn'],rechazo:['No acepta','no'],cita:['Llamar de nuevo','info'],otra:['No estaba','info'],nocontesta:['No contestó','info']};
+const cerrado = e => e==='completa' || e==='rechazo';
+const llamDe = cod => LS.get(K_LLAM(),{})[cod] || null;
+let FILTRO='todos';
+function dato(k,v){ return vacio(v) ? '' : `<div><span>${esc(k)}</span><b>${esc(val(v))}</b></div>`; }
+function seccion(t,...ds){ const h=ds.join(''); return h ? `<h3 class="sub">${esc(t)}</h3><div class="dl">${h}</div>` : ''; }
+function badgeEstado(c){ const l=llamDe(c[CK]); if(!l) return '<span class="badge">Sin llamar</span>'; const [t,k]=ESTADO[l.estado]||['—','']; return `<span class="badge ${k}">${esc(t)}${l.intentos>1?' · '+l.intentos+' intentos':''}</span>`; }
 function renderContactos(){
   const ses=LS.get(K_SES,{}), q=$('cBuscar').value.trim().toLowerCase();
-  $('cLead').textContent = (CONFIG.CONTACTOS_DEMO?'Datos de prueba (nombres inventados). ':'') + `Personas asignadas a ${ses.nombre||ses.codigo}: ${CONTACTOS.length}.`;
-  const lista=CONTACTOS.filter(c=>!q || [c[CK],c['Apellidos y nombres'],c['Celular (movil)'],c['Teléfono (fijo)']].some(x=>String(x||'').toLowerCase().includes(q)));
-  $('cList').innerHTML = lista.length ? lista.map(c=>`<button type="button" class="citem${c[CK]===CSEL?' on':''}" data-cod="${esc(c[CK])}"><b>${esc(c['Apellidos y nombres'])}</b><small>${esc(c[CK])} · ${esc(val(c['Celular (movil)']))}</small><br>${esPnp(c)===1?'<span class="badge pnp">PNP</span>':''}<span class="badge${c['Egresado o graduado']==='Graduado'?' ok':''}">${esc(val(c['Egresado o graduado']))}</span></button>`).join('') : '<div class="note">Sin resultados.</div>';
+  const est=c=>(llamDe(c[CK])||{}).estado;
+  const total=CONTACTOS.length, hechos=CONTACTOS.filter(c=>cerrado(est(c))).length;
+  $('cLead').textContent=(CONFIG.CONTACTOS_DEMO?'Datos de prueba (nombres inventados). ':'')+`Hola, ${ses.nombre||ses.codigo}. Elige a quién llamar.`;
+  $('stats').innerHTML=`<div class="stat"><b>${total}</b><span>Asignados</span></div><div class="stat"><b>${total-hechos}</b><span>Por llamar</span></div><div class="stat ok"><b>${hechos}</b><span>Cerrados</span></div>`;
+  const F=[['todos','Todos',total],['pend','Por llamar',total-hechos],['hechos','Cerrados',hechos],['pnp','PNP',CONTACTOS.filter(c=>esPnp(c)===1).length]];
+  $('chips').innerHTML=F.map(([k,t,n])=>`<button type="button" class="chip${FILTRO===k?' on':''}" data-f="${k}">${t} (${n})</button>`).join('');
+  let lista=CONTACTOS.filter(c=>!q || [c[CK],c['Apellidos y nombres'],c['Celular (movil)'],c['Teléfono (fijo)']].some(x=>String(x||'').toLowerCase().includes(q)))
+    .filter(c=>FILTRO==='todos' || (FILTRO==='pend'&&!cerrado(est(c))) || (FILTRO==='hechos'&&cerrado(est(c))) || (FILTRO==='pnp'&&esPnp(c)===1));
+  lista=[...lista].sort((a,b)=>cerrado(est(a))-cerrado(est(b)));         // los cerrados van al final
+  $('cList').innerHTML = lista.length ? lista.map(c=>`<button type="button" class="citem${String(c[CK])===String(CSEL)?' on':''}" data-cod="${esc(c[CK])}"><b>${esc(c['Apellidos y nombres'])}</b><small>${esc(c[CK])} · ${esc(val(c['Celular (movil)']))}</small><br>${badgeEstado(c)}${esPnp(c)===1?'<span class="badge pnp">PNP</span>':''}</button>`).join('')
+    : `<div class="empty"><b>${total?'Sin resultados':'Aún no hay contactos'}</b>${total?'Prueba con otro filtro o búsqueda.':'Si acabas de entrar, pulsa «Actualizar lista».'}</div>`;
   const c=contactoDe(CSEL), d=$('cDetail');
-  if(!c){ d.innerHTML='<div class="note">Seleccione una persona de la lista para ver sus datos.</div>'; return; }
-  const p=esPnp(c);
-  d.innerHTML=`<h2>${esc(c['Apellidos y nombres'])}</h2><div class="note">Código ${esc(c[CK])}</div>
+  if(!c){ d.innerHTML=`<div class="empty"><b>Elige a una persona de la lista</b>Aquí verás sus datos, podrás marcar si es policía e iniciar la llamada.</div>`; return; }
+  const p=esPnp(c), l=llamDe(c[CK]), n=l?l.intentos:0, cerr=l&&cerrado(l.estado);
+  const info = l ? `${(ESTADO[l.estado]||['—'])[0]} · ${l.intentos} ${l.intentos>1?'intentos':'intento'} · ${l.fecha} ${l.hora}${l.estado==='cita'&&l.cita?' · cita: '+String(l.cita).replace('T',' '):''}` : 'Aún no se ha llamado a esta persona.';
+  const btn = cerr ? 'Registrar otra llamada' : (n>=1 ? `Llamar de nuevo (intento ${Math.min(2,n+1)})` : 'Iniciar llamada');
+  d.innerHTML=`<h2>${esc(c['Apellidos y nombres'])}</h2><div class="note">Código ${esc(c[CK])}${c['Celular (movil)']?' · Celular '+esc(c['Celular (movil)']):''}</div>
+  <div class="estado ${l?(ESTADO[l.estado]||[0,''])[1]:''}">${esc(info)}</div>
+  <div class="row" style="margin:14px 0 4px"><button type="button" class="btn big${cerr?' ghost':''}" id="btnIniciar">${btn}</button></div>
   <h3 class="sub">¿Es policía (PNP)?</h3>
   <div class="seg" role="group" aria-label="Es policía"><button type="button" data-pnp="1" class="${p===1?'sel':''}">Sí, es PNP</button><button type="button" data-pnp="2" class="${p===2?'sel':''}">No</button></div>
-  <div class="note">Si marca Sí, la encuesta abre las preguntas del módulo policial. En la base figura: ${esc(val(c['Es PNP']))}.</div>
-  <div class="row" style="margin-top:14px"><button type="button" class="btn" id="btnIniciar">Iniciar llamada</button></div>
-  <h3 class="sub">Contacto</h3><div class="dl">${dato('Celular',c['Celular (movil)'])}${dato('Teléfono fijo',c['Teléfono (fijo)'])}${dato('Correo PUCP',c['Correo PUCP'])}${dato('Correo externo',c['Correo externo'])}</div>
-  <h3 class="sub">Datos académicos</h3><div class="dl">${dato('Ciclo de ingreso',c['Ciclo de ingreso'])}${dato('Último ciclo matriculado',c['Ultimo ciclo matrículado'])}${dato('Ciclo de egreso',c['Ciclo de egreso'])}${dato('Egresado o graduado',c['Egresado o graduado'])}${dato('Fecha de sustentación',c['Fecha de sustentación'])}${dato('CRAEST',c['CRAEST'])}${dato('Especialidad',c['Especialidad'])}${dato('Modalidad',c['Modalidad de la especialidad'])}</div>
-  <h3 class="sub">Datos personales</h3><div class="dl">${dato('DNI',c['Número de DNI'])}${dato('Sexo',c['Sexo'])}${dato('Edad',c['Edad'])}${dato('Fecha de nacimiento',c['Fecha de nacimiento'])}</div>
-  <h3 class="sub">Policía Nacional del Perú (según la base)</h3><div class="dl">${dato('Promoción(es)',c['Promoción(es) PNP'])}${dato('Ciclo en lista PNP',c['Ciclo de matrícula en lista PNP'])}${dato('Rango / cargo',c['Rango / cargo PNP'])}${dato('Grupo',c['Grupo PNP'])}${dato('Horario',c['Horario PNP'])}</div>
-  <h3 class="sub">Origen</h3><div class="dl">${dato('Estado en base histórica',c['Estado en base histórica'])}${dato('Archivo(s) fuente PNP',c['Archivo(s) fuente PNP'])}</div>`;
+  <div class="note">Si marcas Sí, la encuesta abre las preguntas del módulo policial. En la base figura: ${esc(val(c['Es PNP']))}.</div>
+  ${seccion('Contacto',dato('Celular',c['Celular (movil)']),dato('Teléfono fijo',c['Teléfono (fijo)']),dato('Correo PUCP',c['Correo PUCP']),dato('Correo externo',c['Correo externo']))}
+  ${seccion('Datos académicos',dato('Año de ingreso',anio(c['Ciclo de ingreso'])),dato('Último año matriculado',anio(c['Ultimo ciclo matrículado'])),dato('Año de egreso',anio(c['Ciclo de egreso'])),dato('Egresado o graduado',c['Egresado o graduado']),dato('Fecha de sustentación',c['Fecha de sustentación']),dato('Especialidad',c['Especialidad']),dato('Modalidad',c['Modalidad de la especialidad']))}
+  ${seccion('Policía Nacional del Perú (según la base)',dato('Promoción(es)',c['Promoción(es) PNP']),dato('Rango / cargo',c['Rango / cargo PNP']),dato('Grupo',c['Grupo PNP']),dato('Horario',c['Horario PNP']))}
+  ${seccion('Origen',dato('Estado en base histórica',c['Estado en base histórica']))}`;
 }
-async function abrirContactos(){
-  show('scrContactos'); await cargarContactos(false); renderContactos();
-}
-$('tabHome').addEventListener('click', home);
-$('tabCont').addEventListener('click', abrirContactos);
 $('btnCRefresh').addEventListener('click', async ()=>{ await cargarContactos(true); renderContactos(); });
 $('cBuscar').addEventListener('input', renderContactos);
-$('cList').addEventListener('click', e=>{ const b=e.target.closest('[data-cod]'); if(b){ CSEL=b.dataset.cod; renderContactos(); } });
+$('chips').addEventListener('click', e=>{ const b=e.target.closest('[data-f]'); if(b){ FILTRO=b.dataset.f; renderContactos(); } });
+$('cList').addEventListener('click', e=>{
+  const b=e.target.closest('[data-cod]'); if(!b) return;
+  CSEL=b.dataset.cod; renderContactos();
+  if(matchMedia('(max-width:860px)').matches) $('cDetail').scrollIntoView({behavior:'smooth',block:'start'});
+});
 $('cDetail').addEventListener('click', e=>{
   const c=contactoDe(CSEL); if(!c) return;
   const b=e.target.closest('[data-pnp]');
   if(b){ const m=LS.get(K_PNP,{}); m[c[CK]]=Number(b.dataset.pnp); LS.set(K_PNP,m); renderContactos(); return; }
   if(e.target.id==='btnIniciar'){
-    if(LS.get(K_BORR,null) && !confirm('Hay un registro sin terminar. Si inicia uno nuevo, ese registro se descarta. ¿Continuar?')) return;
+    if(LS.get(K_BORR,null) && !confirm('Hay una encuesta sin terminar. Si inicias una nueva, esa se descarta. ¿Continuar?')) return;
     LS.del(K_BORR); startRecord(c);
   }
 });
@@ -898,8 +932,8 @@ function renderSide(){
   const c = has('A0_1') ? contactoDe(R.A0_1) : null, p=$('sidePanel');
   p.classList.toggle('hidden', !c);
   if(!c) return;
-  const f=(k,v)=>`<dt>${esc(k)}</dt><dd>${esc(val(v))}</dd>`;
-  p.innerHTML=`<h4>Datos del registro de egresados</h4><dl>${f('Persona',c['Apellidos y nombres'])}${f('Ciclo de ingreso',c['Ciclo de ingreso'])}${f('Ciclo de egreso',c['Ciclo de egreso'])}${f('Egresado o graduado',c['Egresado o graduado'])}${f('Fecha de sustentación',c['Fecha de sustentación'])}${f('Modalidad',c['Modalidad de la especialidad'])}${f('Es PNP',esPnp(c)===1?'Sí':'No')}</dl>`;
+  const f=(k,v)=>vacio(v)?'':`<dt>${esc(k)}</dt><dd>${esc(val(v))}</dd>`;
+  p.innerHTML=`<h4>Datos del registro de egresados</h4><dl>${f('Persona',c['Apellidos y nombres'])}${f('Año de ingreso',anio(c['Ciclo de ingreso']))}${f('Año de egreso',anio(c['Ciclo de egreso']))}${f('Egresado o graduado',c['Egresado o graduado'])}${f('Fecha de sustentación',c['Fecha de sustentación'])}${f('Modalidad',c['Modalidad de la especialidad'])}${f('Es PNP',esPnp(c)===1?'Sí':'No')}</dl>`;
 }
 
 /* Inicio */
