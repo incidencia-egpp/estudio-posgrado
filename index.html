@@ -323,7 +323,7 @@ const S = [
  {k:'P', t:'Perfil de la persona egresada', items:[
   {type:'number', id:'P1', code:'P1', q:'¿Qué edad tiene actualmente?', unit:'años', min:20, max:80, nr:[99,'Prefiere no responder']},
   {type:'radio', id:'P2', code:'P2', q:'¿Con qué género se identifica?', opts:[[1,'Femenino'],[2,'Masculino'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'P2_esp'}},
-  {type:'radio', id:'P3', code:'P3', q:'¿Dónde reside actualmente?', opts:[[1,'Lima Metropolitana y Callao'],[2,'Otro departamento del Perú. Especificar'],[3,'Fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P3_esp',3:'P3_esp'}},
+  {type:'radio', id:'P3', code:'P3', q:'¿En qué departamento del Perú reside actualmente?', opts:[[1,'Lima Metropolitana y Callao'],[2,'Otro departamento del Perú. Especificar'],[3,'Fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P3_esp',3:'P3_esp'}},
   {type:'text', id:'P4', code:'P4', q:'¿Qué carrera estudió en el pregrado?', ins:'Pregunta abierta.', nr:['99','No responde']},
   {type:'radio', id:'P5', code:'P5', q:'¿En qué universidad o institución realizó principalmente sus estudios de pregrado?', opts:[[1,'PUCP'],[2,'Otra institución en el Perú. Especificar'],[3,'Institución fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P5_esp',3:'P5_esp'}},
   {type:'number', id:'P6', code:'P6', q:'Aproximadamente, ¿cuántos años de experiencia laboral tiene en total?', ins:'Contar desde las prácticas.', unit:'años', min:0, max:60, nr:[99,'Prefiere no responder']},
@@ -345,7 +345,7 @@ const S = [
   {type:'radio', id:'CP2', code:'CP2', q:'¿Cuál era su grado?', ins:'No leer. Marcar según la respuesta.', when:()=>v('C2')===10, opts:L.PGRA, two:true},
   {type:'precoded', id:'CP3', txt:'CP3_txt', code:'CP3', q:'¿En qué unidad prestaba servicios?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('C2')===10, opts:L.PUNI, esp:{95:'CP3_esp'}},
   {type:'radio', id:'CP4', code:'CP4', q:'¿Cuál era su función principal en esa unidad?', when:()=>v('C2')===10, opts:L.PFUN, esp:{95:'CP4_esp'}},
-  {type:'radio', id:'C7', code:'C7', q:'Antes de entrar a la maestría, ¿podría indicarme en qué rango se encontraba aproximadamente su ingreso neto mensual personal?', when:()=>v('C1')===1 && has('C2'), opts:L.ING}
+  {type:'radio', id:'C7', code:'C7', q:'Antes de entrar a la maestría, ¿podría indicarme en qué rango se encontraba aproximadamente su ingreso bruto mensual personal?', when:()=>v('C1')===1 && has('C2'), opts:L.ING}
  ]},
  {k:'D', t:'Situación laboral actual', items:[
   {type:'radio', id:'D1', code:'D1', q:'Actualmente, ¿cuál describe mejor su situación principal?', opts:[[1,'Trabaja'],[2,'No trabaja'],[99,'Prefiere no responder']]},
@@ -360,7 +360,7 @@ const S = [
   {type:'radio', id:'DP2', code:'DP2', q:'¿Cuál es su grado actual?', ins:'No leer. Marcar según la respuesta.', when:()=>v('D2')===10, opts:L.PGRA, two:true},
   {type:'precoded', id:'DP3', txt:'DP3_txt', code:'DP3', q:'¿En qué unidad presta servicios actualmente?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('D2')===10, opts:L.PUNI, esp:{95:'DP3_esp'}},
   {type:'radio', id:'DP4', code:'DP4', q:'¿Cuál es su función principal en esa unidad?', when:()=>v('D2')===10, opts:L.PFUN, esp:{95:'DP4_esp'}},
-  {type:'radio', id:'D7', code:'D7', q:'Considerando su ingreso mensual neto aproximado, ¿en qué rango se encuentra actualmente?', when:()=>v('D1')===1 && has('D2'), opts:L.ING},
+  {type:'radio', id:'D7', code:'D7', q:'Considerando su ingreso mensual bruto aproximado, ¿en qué rango se encuentra actualmente?', when:()=>v('D1')===1 && has('D2'), opts:L.ING},
   {type:'radio', id:'D8', code:'D8', q:'¿Hace cuánto tiempo no tiene un trabajo remunerado?', when:()=>inn('D1',[2,99]), opts:[[1,'Menos de 6 meses'],[2,'Entre 6 y 12 meses'],[3,'Entre 1 y 2 años'],[4,'Más de 2 años'],[99,'Prefiere no responder']]},
   {type:'radio', id:'D9', code:'D9', q:'¿Actualmente está buscando trabajo?', when:()=>inn('D1',[2,99]), opts:[[1,'Sí'],[2,'No'],[99,'Prefiere no responder']]}
  ]},
