@@ -349,7 +349,7 @@ const S = [
   {type:'radio', id:'C7', code:'C7', q:'Antes de entrar a la maestría, ¿podría indicarme en qué rango se encontraba aproximadamente su ingreso bruto mensual personal?', when:()=>v('C1')===1 && has('C2'), opts:L.ING}
  ]},
  {k:'D', t:'Situación laboral actual', items:[
-  {type:'radio', id:'D1', code:'D1', q:'Actualmente, ¿cuál describe mejor su situación principal?', opts:[[1,'Trabaja'],[2,'No trabaja'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'D1', code:'D1', q:'Actualmente, ¿cuál describe mejor su situación laboral actual?', opts:[[1,'Trabaja'],[2,'No trabaja'],[99,'Prefiere no responder']]},
   {type:'radio', id:'D2', code:'D2', q:'¿Qué tipo de organización es?', ins:'Indagar y marcar la categoría que agrupa.', when:()=>v('D1')===1, opts:L.ORG, optWhen:{10:()=>v('A0_2')===1}, esp:{95:'D2_esp'}, two:true},
   {type:'text', id:'D3', code:'D3', q:'¿Cuál es el nombre de la institución, empresa u organización donde trabaja actualmente?', ins:NAME_INS, when:()=>v('D1')===1 && has('D2') && !inn('D2',[9,10]), nr:['99','Prefiere no responder']},
   {type:'precoded', id:'D4', txt:'D4_txt', code:'D4', q:'¿En qué área u oficina de esa institución trabaja actualmente?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>v('D1')===1 && has('D2') && !inn('D2',[9,10]), opts:L.AREA, esp:{95:'D4_esp'}},
