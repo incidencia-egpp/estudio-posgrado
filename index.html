@@ -91,6 +91,7 @@ nav.sections li.skip{opacity:.4;text-decoration:line-through}
 .opt:has(input:focus-visible){outline:3px solid var(--red);outline-offset:2px}
 .opt.box .code::before{content:"";}
 .esp{margin:6px 0 4px 3.4em;max-width:640px}
+.noleer{font-style:italic;font-weight:400;opacity:.75;white-space:nowrap}
 .nr{display:inline-flex;align-items:center;gap:8px;margin-top:8px;font-size:.9rem;color:var(--slate);cursor:pointer}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .row input[type=number]{max-width:160px}
@@ -498,6 +499,13 @@ function visibleSections(){
    RENDER
    ========================================================= */
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+/* «Prefiere no responder», «No sabe», «No aplica», «No recuerda»: se marcan pero no se leen a la persona */
+const NO_LEER=/prefiere no responder|no sabe|no aplica|no recuerda|no responde/i;
+function lbl(t){
+  const x=String(t);
+  if(!NO_LEER.test(x)) return esc(x);
+  return esc(x.replace(/\s*\(no leer\)/i,''))+' <i class="noleer">[no leer]</i>';
+}
 function qhead(it){
   const text = it.qf ? it.qf() : (it.q||'');
   return `<div class="qtext">${it.code?`<span class="qcode">${esc(it.code)}</span>`:''}${esc(text)}</div>${it.ins?`<span class="ins">${esc(it.ins)}</span>`:''}`;
@@ -519,7 +527,7 @@ function renderItem(it){
       it.opts.forEach(([c,t])=>{
         if(!optVisible(it,c)) return;
         const sel=R[it.id]===c;
-        h+=`<label class="opt${sel?' sel':''}"><input type="radio" name="${it.id}" value="${c}" ${sel?'checked':''}><span class="code">${c}</span><span>${esc(t)}</span></label>`;
+        h+=`<label class="opt${sel?' sel':''}"><input type="radio" name="${it.id}" value="${c}" ${sel?'checked':''}><span class="code">${c}</span><span>${lbl(t)}</span></label>`;
         if(sel && it.esp && it.esp[c]) h+=espInput(it.esp[c]);
       });
       h+='</div>'; break;
@@ -528,14 +536,14 @@ function renderItem(it){
       h=qhead(it)+'<div class="opts">';
       it.opts.forEach(([x,t])=>{
         const sel=R[x]===1;
-        h+=`<label class="opt box${sel?' sel':''}"><input type="checkbox" data-multi="${it.id}" name="${x}" ${sel?'checked':''}><span class="code">${x.slice(-1)}</span><span>${esc(t)}</span></label>`;
+        h+=`<label class="opt box${sel?' sel':''}"><input type="checkbox" data-multi="${it.id}" name="${x}" ${sel?'checked':''}><span class="code">${x.slice(-1)}</span><span>${lbl(t)}</span></label>`;
         if(sel && it.esp && it.esp[x]) h+=espInput(it.esp[x]);
       });
       h+='</div>'; break;
     }
     case 'grid': {
       h=qhead(it)+'<div class="gridwrap"><table class="grid"><thead><tr><th></th>';
-      it.cols.forEach(([c,t])=>h+=`<th scope="col">${esc(t)}</th>`);
+      it.cols.forEach(([c,t])=>h+=`<th scope="col">${lbl(t)}</th>`);
       h+='</tr></thead><tbody>';
       it.rows.forEach(([x,t])=>{
         h+=`<tr data-row="${x}"><td class="lab"><b>${x}</b>${esc(t)}</td>`;
@@ -548,7 +556,7 @@ function renderItem(it){
     case 'scale': {
       h=qhead(it)+'<div class="scale">';
       for(let i=0;i<=10;i++){ const sel=R[it.id]===i; h+=`<label class="${sel?'sel':''}"><input type="radio" name="${it.id}" value="${i}" ${sel?'checked':''}>${i}</label>`; }
-      const s98=R[it.id]===98; h+=`<label class="wide${s98?' sel':''}"><input type="radio" name="${it.id}" value="98" ${s98?'checked':''}>No sabe (98)</label></div>`;
+      const s98=R[it.id]===98; h+=`<label class="wide${s98?' sel':''}"><input type="radio" name="${it.id}" value="98" ${s98?'checked':''}>No sabe (98) <i class="noleer">[no leer]</i></label></div>`;
       h+=`<div class="scale-ends"><span>0 = ${esc(it.ends[0])}</span><span>10 = ${esc(it.ends[1])}</span></div>`; break;
     }
     case 'text': case 'textarea': case 'number': case 'datetime': {
@@ -559,7 +567,7 @@ function renderItem(it){
       else if(it.type==='number') h+=`<div class="row"><input type="number" inputmode="numeric" data-num="${it.id}" min="${it.min}" max="${it.max}" value="${esc(val)}" ${isNR?'disabled':''}>${it.unit?`<span>${it.unit}</span>`:''}</div>`;
       else if(it.type==='datetime') h+=`<input type="datetime-local" data-text="${it.id}" value="${esc(val)}" style="max-width:280px">`;
       else h+=`<input type="text" data-text="${it.id}" value="${esc(val)}" ${isNR?'disabled':''}>`;
-      if(it.nr) h+=`<label class="nr"><input type="checkbox" data-nr="${it.id}" ${isNR?'checked':''}> ${esc(it.nr[1])} (${it.nr[0]})</label>`;
+      if(it.nr) h+=`<label class="nr"><input type="checkbox" data-nr="${it.id}" ${isNR?'checked':''}> ${lbl(it.nr[1])} (${it.nr[0]})</label>`;
       break;
     }
   }
@@ -691,8 +699,8 @@ function startRecord(c){
     const ll=llamDe(c[CK]); if(!ll) R.A0_3=1; else if(!cerrado(ll.estado)) R.A0_3=Math.min(2,ll.intentos+1);
     const mod=String(c['Modalidad de la especialidad']||'').toUpperCase();
     if(mod.includes('PRESENCIAL')){ R.P7=1; AUTO.P7=true; } else if(mod.includes('DISTANCIA')||mod.includes('VIRTUAL')){ R.P7=2; AUTO.P7=true; }
-    const y=Number(String(c['Ciclo de egreso']||'').slice(0,4));
-    if(y>=2021 && y<=2026){ R.P8=y; AUTO.P8=true; }
+    const y=Number(anio(c['Ciclo de egreso'])), q8=findItem('P8');
+    if(y>=q8.min && y<=q8.max){ R.P8=y; AUTO.P8=true; }
   }
   META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now)};
   show('scrForm'); render(); window.scrollTo({top:0});
