@@ -36,6 +36,7 @@ header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:10}
 .bar .status button:hover{background:rgba(255,255,255,.12)}
 .progrow{max-width:1240px;margin:0 auto;padding:2px 24px 8px;display:flex;justify-content:space-between;gap:12px;font-size:.84rem;opacity:.95}
 .progrow #progLeft{font-weight:700}
+.progrow #timer{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .stripe{height:5px;background:rgba(216,68,90,.28)}
 .stripe span{display:block;height:100%;width:0;background:var(--red);transition:width .35s ease}
 
@@ -205,7 +206,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
       <button id="btnSalir" class="hidden" type="button">Salir</button>
     </div>
   </div>
-  <div class="progrow hidden" id="progRow"><span id="progTxt"></span><span id="progLeft"></span></div>
+  <div class="progrow hidden" id="progRow"><span id="timer" title="Tiempo transcurrido desde que se inició la encuesta">⏱ 00:00</span><span id="progTxt"></span><span id="progLeft"></span></div>
   <div class="stripe"><span id="progress"></span></div>
 </header>
 
@@ -299,8 +300,11 @@ const has = id => R[id] !== undefined && R[id] !== null && R[id] !== '';
 const inn = (id, arr) => arr.includes(R[id]);
 const ACC = () => v('B0') === 1;
 const PNP = () => v('A0_2') === 1;      // persona policía, marcada en la lista de contactos
+const POL = () => v('A0_2') === 1 && has('D1');   // abre el módulo policial actual (DP1) justo después de D1
+const RET = () => v('DP1') === 5;                 // oficial o suboficial en situación de retiro
 
 const L = {
+  ORG: [[1,'Gobierno nacional (ministerios y sus organismos adscritos)'],[2,'Gobierno regional o local'],[3,'Otra entidad pública (Congreso, Poder Judicial, organismos autónomos)'],[4,'Empresa pública'],[5,'Empresa privada (incluye consultoras)'],[6,'ONG u organización de la sociedad civil'],[7,'Organismo internacional o de cooperación'],[8,'Universidad o centro de investigación (público o privado)'],[9,'Trabaja de forma independiente, sin empleador'],[10,'Policía Nacional del Perú (en situación de actividad)'],[95,'Otro. Especificar']],
   AREA: [[1,'Alta dirección o gerencia general (despacho, viceministerio, secretaría general, directorio)'],[2,'Área de línea u operativa: la que hace la actividad principal de la institución (direcciones generales, programas, proyectos, operaciones o área comercial en una empresa)'],[3,'Asesoría jurídica o procuraduría'],[4,'Planeamiento y presupuesto'],[5,'Administración y soporte (finanzas, logística, recursos humanos, comunicaciones, tecnologías de la información, atención al ciudadano)'],[6,'Control, auditoría o integridad'],[95,'Otra. Especificar'],[99,'Prefiere no responder']],
   CARGO: [[1,'Funcionario/a o directivo/a (por ejemplo: director, gerente, jefe)'],[2,'Profesional especializado/a (por ejemplo: asesor, abogado, auditor, docente, consultor, médico, ingeniero, contador, economista, psicólogo, investigador)'],[3,'Coordinador/a'],[4,'Especialista'],[5,'Analista'],[6,'Asistente, auxiliar o técnico/a (incluye secretario)'],[7,'Trabajador/a independiente o dueño/a de negocio propio'],[95,'Otro. Especificar'],[99,'Prefiere no responder']],
   ING: [[1,'Menos de S/ 2,000'],[2,'De S/ 2,000 a menos de S/ 3,500'],[3,'De S/ 3,500 a menos de S/ 5,000'],[4,'De S/ 5,000 a menos de S/ 7,500'],[5,'De S/ 7,500 a menos de S/ 10,000'],[6,'S/ 10,000 o más'],[99,'Prefiere no responder']],
@@ -323,57 +327,63 @@ const S = [
   {type:'radio', id:'A0_6', code:'A0.6', q:'¿Quién contestó?', when:()=>v('A0_4')===1, opts:[[1,'La persona egresada'],[2,'Otra persona; la persona egresada no estaba disponible']]}
  ]},
  {k:'B', t:'Presentación y consentimiento', items:[
-  {type:'read', when:()=>v('A0_6')===1, html:'<p>Buenos días/tardes. Mi nombre es <b>[su nombre]</b> y me comunico por encargo de la Escuela de Gobierno y Políticas Públicas de la Pontificia Universidad Católica del Perú (PUCP). Estamos realizando un estudio sobre la trayectoria profesional y la empleabilidad de las personas que cursaron la Maestría en Gobierno y Políticas Públicas. El objetivo es conocer sus experiencias profesionales, los cambios que han experimentado en su trayectoria y su percepción sobre el aporte de la maestría.</p><p>La encuesta tendrá una duración aproximada de 15 a 20 minutos. Su participación es voluntaria. Puede decidir no responder alguna pregunta o finalizar la entrevista en cualquier momento. Sus respuestas serán tratadas de manera confidencial y se analizarán únicamente de forma agrupada, por lo que sus datos personales no serán divulgados ni asociados a los resultados del estudio.</p>'},
+  {type:'read', when:()=>v('A0_6')===1, html:'<p>Buenos días/tardes. Mi nombre es <b>[su nombre]</b> y me comunico por encargo de la Escuela de Gobierno y Políticas Públicas de la Pontificia Universidad Católica del Perú (PUCP). Estamos realizando un estudio sobre la trayectoria profesional y la empleabilidad de las personas que cursaron la Maestría en Gobierno y Políticas Públicas. El objetivo es conocer sus experiencias profesionales, los cambios que han experimentado en su trayectoria y su percepción sobre el aporte de la maestría.</p><p>La encuesta tendrá una duración aproximada de 15 minutos. Su participación es voluntaria. Puede decidir no responder alguna pregunta o finalizar la entrevista en cualquier momento. Sus respuestas serán tratadas de manera confidencial y se analizarán únicamente de forma agrupada, por lo que sus datos personales no serán divulgados ni asociados a los resultados del estudio.</p>'},
   {type:'radio', id:'B0', code:'B0', q:'¿Acepta participar en esta encuesta?', when:()=>v('A0_6')===1, opts:[[1,'Sí'],[2,'No'],[3,'Pide que la llamen en otro momento']]},
   {type:'datetime', id:'B0_cita', code:'', q:'Fecha y hora acordadas para la nueva llamada', when:()=>v('B0')===3}
  ]},
  {k:'P', t:'Perfil de la persona egresada', items:[
   {type:'number', id:'P1', code:'P1', q:'¿Qué edad tiene actualmente?', unit:'años', min:20, max:80, nr:[99,'Prefiere no responder']},
-  {type:'radio', id:'P2', code:'P2', q:'¿Con qué género se identifica?', opts:[[1,'Femenino'],[2,'Masculino'],[95,'Otro'],[99,'Prefiere no responder']]},
-  {type:'radio', id:'P3', code:'P3', q:'¿En qué departamento del Perú reside actualmente?', opts:[[1,'Lima Metropolitana y Callao'],[2,'Otro departamento del Perú. Especificar'],[3,'Fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P3_esp',3:'P3_esp'}},
+  {type:'radio', id:'P2', code:'P2', q:'¿Con qué género se identifica?', opts:[[1,'Femenino'],[2,'Masculino'],[95,'Otro'],[99,'Prefiere no responder']], optWhen:{95:()=>!PNP()}},
+  {type:'radio', id:'P3', code:'P3', q:'¿Dónde reside actualmente?', opts:[[1,'Lima Metropolitana y Callao'],[2,'Otro departamento del Perú. Especificar'],[3,'Fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P3_esp',3:'P3_esp'}},
   {type:'text', id:'P4', code:'P4', q:'¿Qué carrera estudió en el pregrado?', ins:'Pregunta abierta.', nr:['99','No responde']},
-  {type:'radio', id:'P5', code:'P5', q:'¿En qué universidad o institución realizó principalmente sus estudios de pregrado?', opts:[[1,'PUCP'],[2,'Otra institución en el Perú. Especificar'],[3,'Institución fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P5_esp',3:'P5_esp'}},
+  {type:'radio', id:'P5', code:'P5', q:'¿En qué universidad o institución realizó principalmente sus estudios de pregrado?', opts:[[1,'PUCP'],[4,'Escuela de oficiales. Especificar'],[2,'Otra institución en el Perú. Especificar'],[3,'Institución fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P5_esp',3:'P5_esp',4:'P5_esp'}, espOpt:[4]},
   {type:'number', id:'P6', code:'P6', q:'Aproximadamente, ¿cuántos años de experiencia laboral tiene en total?', ins:'Contar desde las prácticas.', unit:'años', min:0, max:60, nr:[99,'Prefiere no responder']},
   {type:'note', html:'P8: completar con el registro de egresados. Preguntar solo si no se cuenta con el dato.'},
   {type:'number', id:'P8', code:'P8', q:'¿En qué año concluyó sus estudios de maestría?', min:2018, max:2026, nr:[98,'No recuerda']},
   {type:'radio', id:'P9', code:'P9', q:'¿Cuál fue el principal motivo por el que eligió la Maestría en Gobierno y Políticas Públicas de la PUCP?', ins:'No leer alternativas. Marcar la más cercana a la respuesta.', opts:[[1,'Prestigio de la PUCP'],[2,'Plan de estudios o cursos'],[3,'Docentes'],[4,'Modalidad o flexibilidad de horarios'],[5,'Costo o facilidades de financiamiento'],[6,'Recomendación de colegas, egresados/as o conocidos'],[95,'Otro. Especificar'],[98,'No recuerda']], esp:{95:'P9_esp'}}
  ]},
  {k:'C', t:'Situación laboral antes de la maestría', items:[
-  {type:'radio', id:'C1', code:'C1', q:'Inmediatamente antes de iniciar la maestría, ¿cuál describe mejor su situación laboral principal?', opts:[[1,'Trabajaba'],[2,'No trabajaba'],[99,'Prefiere no responder']]},
-  {type:'text', id:'C3', code:'C3', q:'¿Cuál era el nombre de la institución, empresa u organización donde trabajaba?', ins:NAME_INS, when:()=>v('C1')===1 && !PNP(), nr:['99','Prefiere no responder']},
-  {type:'precoded', id:'C4', txt:'C4_txt', code:'C4', q:'¿En qué área u oficina de esa institución trabajaba?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>v('C1')===1 && !PNP(), opts:L.AREA, esp:{95:'C4_esp'}},
-  {type:'precoded', id:'C5', txt:'C5_txt', code:'C5', q:'¿Cuál era el nombre de su cargo o puesto en ese trabajo?', ins:'Pregunta abierta. Anotar el cargo tal como lo dice y marcar el grupo que corresponda. Si no es claro, leer las opciones.', label:'Cargo', when:()=>v('C1')===1 && !PNP(), opts:L.CARGO, esp:{95:'C5_esp'}},
-  {type:'radio', id:'C6', code:'C6', q:'¿Cuál era su principal vínculo laboral?', when:()=>v('C1')===1 && !PNP(), opts:[[1,'Nombramiento o carrera pública'],[2,'Contrato indefinido'],[3,'Contrato a plazo fijo'],[4,'Locación de servicios, recibos por honorarios o consultoría'],[5,'Trabajo independiente o negocio propio'],[6,'Prácticas profesionales'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'C6_esp'}},
-  {type:'note', html:'Módulo policial: reemplaza C3 a C6.', when:()=>v('C1')===1 && PNP()},
-  {type:'radio', id:'CP1', code:'CP1', q:'¿Cuál era su categoría en la Policía Nacional del Perú?', when:()=>v('C1')===1 && PNP(), opts:L.PCAT},
-  {type:'radio', id:'CP2', code:'CP2', q:'¿Cuál era su grado?', ins:'No leer. Marcar según la respuesta.', when:()=>v('C1')===1 && PNP(), opts:L.PGRA, two:true},
-  {type:'precoded', id:'CP3', txt:'CP3_txt', code:'CP3', q:'¿En qué unidad prestaba servicios?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('C1')===1 && PNP(), opts:L.PUNI, esp:{95:'CP3_esp'}},
-  {type:'radio', id:'CP4', code:'CP4', q:'¿Cuál era su función principal en esa unidad?', when:()=>v('C1')===1 && PNP(), opts:L.PFUN, esp:{95:'CP4_esp'}},
-  {type:'radio', id:'C7', code:'C7', q:'Antes de entrar a la maestría, ¿podría indicarme en qué rango se encontraba aproximadamente su ingreso bruto mensual personal?', when:()=>v('C1')===1, opts:L.ING}
+  {type:'radio', id:'C1', code:'C1', q:'Antes de ingresar a la maestría, ¿cuál de las siguientes opciones describe mejor su situación laboral?', opts:[[1,'Trabajaba'],[2,'No trabajaba'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'C2', code:'C2', q:'¿En qué tipo de organización trabajaba principalmente?', ins:'Indagar y marcar la categoría que agrupa.', when:()=>v('C1')===1, opts:L.ORG, esp:{95:'C2_esp'}, two:true},
+  {type:'text', id:'C3', code:'C3', q:'¿Cuál era el nombre de la institución, empresa u organización donde trabajaba?', ins:NAME_INS, when:()=>v('C1')===1 && has('C2') && !inn('C2',[9,10]), nr:['99','Prefiere no responder']},
+  {type:'precoded', id:'C4', txt:'C4_txt', code:'C4', q:'¿En qué área u oficina de esa institución trabajaba?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>v('C1')===1 && has('C2') && !inn('C2',[9,10]), opts:L.AREA, esp:{95:'C4_esp'}},
+  {type:'precoded', id:'C5', txt:'C5_txt', code:'C5', q:'¿Cuál era el nombre de su cargo o puesto en ese trabajo?', ins:'Pregunta abierta. Anotar el cargo tal como lo dice y marcar el grupo que corresponda. Si no es claro, leer las opciones.', label:'Cargo', when:()=>v('C1')===1 && has('C2') && !inn('C2',[9,10]), opts:L.CARGO, esp:{95:'C5_esp'}},
+  {type:'note', html:'Independiente: se registra automáticamente C5 = 7 (trabajador/a independiente).', when:()=>v('C2')===9},
+  {type:'radio', id:'C6', code:'C6', q:'Antes de iniciar la maestría, ¿cuál de las siguientes opciones describe mejor su situación o vínculo laboral?', when:()=>v('C1')===1 && has('C2') && v('C2')!==10, opts:[[1,'Nombramiento o carrera pública'],[2,'Contrato indefinido'],[3,'Contrato a plazo fijo'],[4,'Locación de servicios, recibos por honorarios o consultoría'],[5,'Trabajo independiente o negocio propio'],[6,'Prácticas profesionales'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'C6_esp'}},
+  {type:'note', html:'Módulo policial: reemplaza C3 a C6.', when:()=>v('C2')===10},
+  {type:'radio', id:'CP1', code:'CP1', q:'¿Cuál era su categoría en la Policía Nacional del Perú antes de iniciar la maestría?', when:()=>v('C2')===10, opts:L.PCAT},
+  {type:'radio', id:'CP2', code:'CP2', q:'¿Cuál era su grado antes de iniciar la maestría?', ins:'No leer. Marcar según la respuesta.', when:()=>v('C2')===10, opts:L.PGRA, two:true},
+  {type:'precoded', id:'CP3', txt:'CP3_txt', code:'CP3', q:'¿En qué unidad prestaba servicios antes de iniciar la maestría?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('C2')===10, opts:L.PUNI, esp:{95:'CP3_esp'}},
+  {type:'radio', id:'CP4', code:'CP4', q:'¿Cuál era su función principal en esa unidad?', when:()=>v('C2')===10, opts:L.PFUN, esp:{95:'CP4_esp'}},
+  {type:'radio', id:'C7', code:'C7', q:'Antes de entrar a la maestría, ¿podría indicarme en qué rango se encontraba aproximadamente su ingreso bruto mensual personal?', when:()=>v('C1')===1 && has('C2'), opts:L.ING}
  ]},
  {k:'D', t:'Situación laboral actual', items:[
-  {type:'radio', id:'D1', code:'D1', q:'Actualmente, ¿cuál describe mejor su situación laboral actual?', opts:[[1,'Trabaja'],[2,'No trabaja'],[99,'Prefiere no responder']]},
-  {type:'text', id:'D3', code:'D3', q:'¿Cuál es el nombre de la institución, empresa u organización donde trabaja actualmente?', ins:NAME_INS, when:()=>v('D1')===1 && !PNP(), nr:['99','Prefiere no responder']},
-  {type:'precoded', id:'D4', txt:'D4_txt', code:'D4', q:'¿En qué área u oficina de esa institución trabaja actualmente?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>v('D1')===1 && !PNP(), opts:L.AREA, esp:{95:'D4_esp'}},
-  {type:'precoded', id:'D5', txt:'D5_txt', code:'D5', q:'¿Cuál es su cargo o puesto actual?', ins:'Pregunta abierta. Anotar el cargo tal como lo dice y marcar el grupo que corresponda. Si no es claro, leer las opciones.', label:'Cargo', when:()=>v('D1')===1 && !PNP(), opts:L.CARGO, esp:{95:'D5_esp'}},
-  {type:'radio', id:'D6', code:'D6', q:'¿Cuál es principalmente su modalidad de vínculo laboral actual?', when:()=>v('D1')===1 && !PNP(), opts:[[1,'Nombramiento o carrera pública'],[2,'Contrato indefinido'],[3,'Contrato a plazo fijo'],[4,'Locación de servicios, recibos por honorarios o consultoría'],[5,'Trabajo independiente o negocio propio'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'D6_esp'}},
-  {type:'note', html:'Módulo policial: reemplaza D3 a D6.', when:()=>v('D1')===1 && PNP()},
-  {type:'radio', id:'DP1', code:'DP1', q:'¿Cuál es su categoría en la Policía Nacional del Perú?', when:()=>v('D1')===1 && PNP(), opts:L.PCAT},
-  {type:'radio', id:'DP2', code:'DP2', q:'¿Cuál es su grado actual?', ins:'No leer. Marcar según la respuesta.', when:()=>v('D1')===1 && PNP(), opts:L.PGRA, two:true},
-  {type:'precoded', id:'DP3', txt:'DP3_txt', code:'DP3', q:'¿En qué unidad presta servicios actualmente?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>v('D1')===1 && PNP(), opts:L.PUNI, esp:{95:'DP3_esp'}},
-  {type:'radio', id:'DP4', code:'DP4', q:'¿Cuál es su función principal en esa unidad?', when:()=>v('D1')===1 && PNP(), opts:L.PFUN, esp:{95:'DP4_esp'}},
-  {type:'radio', id:'D7', code:'D7', q:'Considerando su ingreso mensual bruto aproximado, ¿en qué rango se encuentra actualmente?', when:()=>v('D1')===1, opts:L.ING},
-  {type:'radio', id:'D8', code:'D8', q:'¿Hace cuánto tiempo no tiene un trabajo remunerado?', when:()=>inn('D1',[2,99]), opts:[[1,'Menos de 6 meses'],[2,'Entre 6 y 12 meses'],[3,'Entre 1 y 2 años'],[4,'Más de 2 años'],[99,'Prefiere no responder']]},
-  {type:'radio', id:'D9', code:'D9', q:'¿Actualmente está buscando trabajo?', when:()=>inn('D1',[2,99]), opts:[[1,'Sí'],[2,'No'],[99,'Prefiere no responder']]}
+  {type:'radio', id:'D1', code:'D1', q:'¿Cuál de las siguientes opciones describe mejor su situación laboral actual?', opts:[[1,'Trabaja'],[2,'No trabaja'],[99,'Prefiere no responder']]},
+  {type:'note', html:'Módulo policial. Si está en actividad, reemplaza D2 a D6. Si está en retiro, responde DP2 y DP3 sobre su paso por la PNP y luego, si trabaja fuera de la PNP, D2 a D6.', when:()=>POL()},
+  {type:'radio', id:'DP1', code:'DP1', q:'Actualmente, ¿cuál es su categoría en la Policía Nacional del Perú?', when:()=>POL(), opts:[...L.PCAT.filter(o=>o[0]!==99),[5,'Oficial o suboficial en situación de retiro'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'DP2', code:'DP2', q:'¿Cuál es su grado actual?', qf:()=>RET()?'¿Cuál era su grado al momento de su retiro de la Policía Nacional del Perú?':'¿Cuál es su grado actual?', ins:'No leer. Marcar según la respuesta.', when:()=>POL() && has('DP1'), opts:L.PGRA, two:true},
+  {type:'precoded', id:'DP3', txt:'DP3_txt', code:'DP3', q:'¿En qué unidad presta servicios actualmente?', qf:()=>RET()?'¿En qué unidad prestaba servicios cuando se retiró de la Policía Nacional del Perú?':'¿En qué unidad presta servicios actualmente?', ins:'Pregunta abierta. Anotar la dirección y la división sin siglas (por ejemplo, "Dirección de Investigación Criminal – División de Homicidios") y marcar el grupo.', label:'Unidad', when:()=>POL() && has('DP1'), opts:L.PUNI, esp:{95:'DP3_esp'}},
+  {type:'radio', id:'DP4', code:'DP4', q:'¿Cuál es su función principal en esa unidad?', when:()=>POL() && has('DP1') && !RET(), opts:L.PFUN, esp:{95:'DP4_esp'}},
+  {type:'radio', id:'DP5', code:'DP5', q:'¿Tiene actualmente algún trabajo fuera de la Policía Nacional del Perú?', when:()=>RET(), opts:[[1,'Sí'],[2,'No'],[99,'Prefiere no responder']]},
+  {type:'note', html:'Trabajo actual fuera de la PNP: preguntar D2 a D6 como a cualquier otra persona.', when:()=>RET() && v('DP5')===1},
+  {type:'radio', id:'D2', code:'D2', q:'¿Qué tipo de organización es?', ins:'Indagar y marcar la categoría que agrupa.', when:()=>(v('D1')===1 && v('A0_2')!==1) || (RET() && v('DP5')===1), opts:L.ORG, optWhen:{10:()=>false}, esp:{95:'D2_esp'}, two:true},
+  {type:'text', id:'D3', code:'D3', q:'¿Cuál es el nombre de la institución, empresa u organización donde trabaja actualmente?', ins:NAME_INS, when:()=>has('D2') && !inn('D2',[9,10]), nr:['99','Prefiere no responder']},
+  {type:'precoded', id:'D4', txt:'D4_txt', code:'D4', q:'¿En qué área u oficina de esa institución trabaja actualmente?', ins:'Pregunta abierta. Anotar el área tal como la dice y marcar una sola opción.', label:'Área', when:()=>has('D2') && !inn('D2',[9,10]), opts:L.AREA, esp:{95:'D4_esp'}},
+  {type:'precoded', id:'D5', txt:'D5_txt', code:'D5', q:'¿Cuál es su cargo o puesto actual?', ins:'Pregunta abierta. Anotar el cargo tal como lo dice y marcar el grupo que corresponda. Si no es claro, leer las opciones.', label:'Cargo', when:()=>has('D2') && !inn('D2',[9,10]), opts:L.CARGO, esp:{95:'D5_esp'}},
+  {type:'note', html:'Independiente: se registra automáticamente D5 = 7 (trabajador/a independiente).', when:()=>v('D2')===9},
+  {type:'radio', id:'D6', code:'D6', q:'Actualmente, ¿Cuál de las siguientes opciones describe mejor su situación o vínculo laboral?', when:()=>has('D2') && v('D2')!==10, opts:[[1,'Nombramiento o carrera pública'],[2,'Contrato indefinido'],[3,'Contrato a plazo fijo'],[4,'Locación de servicios, recibos por honorarios o consultoría'],[5,'Trabajo independiente o negocio propio'],[95,'Otro. Especificar'],[99,'Prefiere no responder']], esp:{95:'D6_esp'}},
+  {type:'radio', id:'D7', code:'D7', q:'Considerando su ingreso mensual bruto aproximado, ¿en qué rango se encuentra actualmente?', when:()=>has('D2') && (v('D1')===1 || v('DP5')===1), opts:L.ING},
+  {type:'radio', id:'D8', code:'D8', q:'¿Hace cuánto tiempo no tiene un trabajo remunerado?', when:()=>inn('D1',[2,99]) && v('DP5')!==1, opts:[[1,'Menos de 6 meses'],[2,'Entre 6 y 12 meses'],[3,'Entre 1 y 2 años'],[4,'Más de 2 años'],[99,'Prefiere no responder']]},
+  {type:'radio', id:'D9', code:'D9', q:'¿Actualmente está buscando trabajo?', when:()=>inn('D1',[2,99]) && v('DP5')!==1, opts:[[1,'Sí'],[2,'No'],[99,'Prefiere no responder']]}
  ]},
  {k:'E', t:'Trayectoria y movilidad profesional', items:[
-  {type:'radio', id:'E1', code:'E1', when:()=>has('C1') && has('D1') && !(PNP() && v('C1')===1 && v('D1')===1),
+  {type:'radio', id:'E0', code:'E0', q:'Actualmente, ¿trabaja con el mismo empleador que tenía antes de iniciar la maestría?', when:()=>v('C1')===1 && v('D1')===1, opts:[[1,'Sí'],[2,'No'],[96,'No aplica']]},
+  {type:'radio', id:'E1', code:'E1', when:()=>has('C1') && has('D1') && (!(v('C1')===1 && v('D1')===1) || (has('E0') && v('E0')!==1)),
    qf:()=> v('D1')!==1 ? 'Pensando en su último trabajo, ¿en qué momento lo empezó?'
         : (v('C1')===1 ? 'Comparando su trabajo antes de la maestría con el actual, ¿en qué momento cambió de empleador? Si cambió más de una vez, piense en el cambio más importante.'
                        : '¿En qué momento consiguió su trabajo actual?'),
-   opts:[[1,'Sigue con el mismo empleador'],...L.MOM,[7,'Antes de la maestría'],[8,'Nunca ha trabajado'],[98,'No recuerda']],
-   optWhen:{1:()=>v('C1')===1 && v('D1')===1, 7:()=>v('D1')!==1, 8:()=>v('D1')!==1}},
-  {type:'radio', id:'E1_PNP', code:'E1-PNP', q:'Comparando su unidad antes de la maestría con la actual, ¿en qué momento cambió de unidad o fue reasignado/a? Si cambió más de una vez, piense en el cambio más importante.', when:()=>PNP() && v('C1')===1 && v('D1')===1, opts:[[1,'Sigue en la misma unidad'],...L.MOM,[98,'No recuerda']]},
+   opts:[...L.MOM,[7,'Antes de la maestría'],[98,'No recuerda']],
+   optWhen:{7:()=>v('D1')!==1}},
   {type:'multi', id:'E2', code:'E2', q:'Desde que inició la maestría, ¿ha experimentado alguno de estos cambios en sus responsabilidades en el trabajo?', ins:'Leer. Puede marcar más de uno.', opts:[['E2a','Fue ascendido/a'],['E2b','Asumió personal o un equipo a cargo'],['E2c','Accedió a un puesto más relacionado con la gestión pública o las políticas públicas'],['E2d','Otro. Especificar'],['E2e','Ninguno']], excl:['E2e'], esp:{E2d:'E2d_esp'}},
   {type:'radio', id:'E3', code:'E3', q:'De los cambios que acaba de mencionar, ¿en qué momento ocurrió el más importante?', when:()=>['E2a','E2b','E2c','E2d'].some(x=>v(x)===1), opts:[...L.MOM.map(([c,t])=>[c-1,t]),[98,'No recuerda']]}
  ]},
@@ -393,10 +403,10 @@ const S = [
    rows:L.COMP.map(([s,t])=>['G2'+s,t.split(':')[0]]), cols:[[4,'Muy frecuentemente'],[3,'Con frecuencia'],[2,'Con poca frecuencia'],[1,'No la utiliza']]}
  ]},
  {k:'H', t:'Aporte atribuido a la maestría', items:[
-  {type:'grid', id:'H1', code:'H1', q:'Pensando en su trayectoria desde que inició la maestría, ¿en qué medida considera que la Maestría en Gobierno y Políticas Públicas contribuyó a los siguientes aspectos? Use una escala de 1 a 5, donde 1 significa "no contribuyó en absoluto" y 5 significa "contribuyó mucho".', ins:'Leer cada aspecto y marcar una respuesta por fila.',
+  {type:'grid', id:'H1', code:'H1', q:'Pensando en su trayectoria desde que inició la maestría, ¿en qué medida considera que la Maestría en Gobierno y Políticas Públicas contribuyó a los siguientes aspectos? Use una escala de 1 a 4, donde 1 significa "nada" y 4 significa "mucho".', ins:'Leer cada aspecto y marcar una respuesta por fila.',
    lead:'<p>¿En qué medida la maestría contribuyó a <b>__________</b>?</p><span class="ins">Repetir la pregunta para cada aspecto, reemplazando el espacio en blanco por lo que aparece en negrita en cada fila.</span>', boldName:true,
    rows:[['H1a','Mejorar su desempeño profesional'],['H1b','Acceder a nuevas oportunidades laborales'],['H1c','Obtener un ascenso o asumir mayores responsabilidades'],['H1d','Mejorar sus ingresos laborales'],['H1e','Ampliar su red de contactos profesionales']],
-   cols:[[1,'No contribuyó en absoluto'],[2,'Contribuyó poco'],[3,'Contribuyó algo'],[4,'Contribuyó bastante'],[5,'Contribuyó mucho'],[96,'No aplica'],[98,'No sabe']]},
+   cols:[[1,'Nada'],[2,'Poco'],[3,'Algo'],[4,'Mucho'],[96,'No aplica'],[98,'No sabe']]},
   {type:'multi', id:'H2', code:'H2', q:'Le leeré algunos elementos de la maestría. Por favor, indíqueme los 3 elementos que contribuyeron más a su desarrollo profesional.', ins:'Leer. Marcar 3 como máximo.', max:3,
    opts:[['H2a','Contenidos y metodologías de análisis'],['H2b','Calidad y experiencia de los docentes'],['H2c','Intercambio con compañeros/as y red profesional'],['H2d','Prestigio de la PUCP'],['H2e','Flexibilidad de la modalidad'],['H2f','Otro. Especificar'],['H2g','Ninguno en particular (no leer)']], excl:['H2g'], esp:{H2f:'H2f_esp'}}
  ]},
@@ -425,7 +435,7 @@ const S = [
 // Las secciones P a Z solo se aplican si la persona aceptó participar.
 S.forEach(s=>{ if(!'AB'.includes(s.k)) s.items.forEach(it=>{ const w=it.when; it.when = w ? ()=>ACC() && w() : ACC; }); });
 
-const HEADERS = ["id_registro","version_form","encuestador","fecha_llamada","hora_inicio","hora_fin","modo_envio","ts_envio","A0_1","A0_2","A0_3","A0_4","A0_5","A0_6","B0","B0_cita","P1","P2","P2_esp","P3","P3_esp","P4","P5","P5_esp","P6","P7","P8","P9","P9_esp","C1","C2","C2_esp","C3","C4_txt","C4","C4_esp","C5_txt","C5","C5_esp","C6","C6_esp","CP1","CP2","CP3_txt","CP3","CP3_esp","CP4","CP4_esp","C7","D1","D2","D2_esp","D3","D4_txt","D4","D4_esp","D5_txt","D5","D5_esp","D6","D6_esp","DP1","DP2","DP3_txt","DP3","DP3_esp","DP4","DP4_esp","D7","D8","D9","E1","E1_PNP","E2a","E2b","E2c","E2d","E2e","E2d_esp","E3","F1","F2","F3","F4","G1a","G1b","G1c","G1d","G1e","G1f","G1g","G2a","G2b","G2c","G2d","G2e","G2f","G2g","H1a","H1b","H1c","H1d","H1e","H2a","H2b","H2c","H2d","H2e","H2f","H2g","H2f_esp","I1","I2","I3","I4a","I4b","I4c","I4d","I4e","I4f","I4g","I4h","I4i","I4h_esp","J1","J2a","J2b","J2c","J2d","J2e","J2e_esp","J3a","J3b","J3c","J3d","J3e","J3f","J3e_esp","J4a","J4b","J4c","J4d","J4e","J4f","J4g","J4_esp","J5","Z1","Z1_ult","OBS"];
+const HEADERS = ["id_registro","version_form","encuestador","fecha_llamada","hora_inicio","hora_fin","duracion_seg","modo_envio","ts_envio","A0_1","A0_2","A0_3","A0_4","A0_5","A0_6","B0","B0_cita","P1","P2","P2_esp","P3","P3_esp","P4","P5","P5_esp","P6","P7","P8","P9","P9_esp","C1","C2","C2_esp","C3","C4_txt","C4","C4_esp","C5_txt","C5","C5_esp","C6","C6_esp","CP1","CP2","CP3_txt","CP3","CP3_esp","CP4","CP4_esp","C7","D1","D2","D2_esp","D3","D4_txt","D4","D4_esp","D5_txt","D5","D5_esp","D6","D6_esp","DP1","DP2","DP3_txt","DP3","DP3_esp","DP4","DP4_esp","DP5","D7","D8","D9","E0","E1","E1_PNP","E2a","E2b","E2c","E2d","E2e","E2d_esp","E3","F1","F2","F3","F4","G1a","G1b","G1c","G1d","G1e","G1f","G1g","G2a","G2b","G2c","G2d","G2e","G2f","G2g","H1a","H1b","H1c","H1d","H1e","H2a","H2b","H2c","H2d","H2e","H2f","H2g","H2f_esp","I1","I2","I3","I4a","I4b","I4c","I4d","I4e","I4f","I4g","I4h","I4i","I4h_esp","J1","J2a","J2b","J2c","J2d","J2e","J2e_esp","J3a","J3b","J3c","J3d","J3e","J3f","J3e_esp","J4a","J4b","J4c","J4d","J4e","J4f","J4g","J4_esp","J5","Z1","Z1_ult","OBS"];
 
 /* =========================================================
    ESTADO
@@ -470,8 +480,18 @@ function prune(){
         if(!on && !shared) delete R[x];
       });
     }));
+    // C5/D5 = 7 para independientes
+    [['C2','C5','C1'],['D2','D5','D1']].forEach(([org,car,trab])=>{
+      if(R[org]===9){ R[car]=7; AUTO[car]=true; }
+      else if(AUTO[car]){ delete R[car]; delete AUTO[car]; }
+    });
+    // D2 = 10 (PNP) se registra solo si la persona policía sigue en actividad; quien está en retiro responde D2 si trabaja fuera de la PNP
+    if(R.A0_2===1 && has('D1') && has('DP1') && R.DP1!==5){ R.D2=10; AUTO.D2=true; }
+    else if(AUTO.D2){ delete R.D2; delete AUTO.D2; }
     // A0_2 según lo marcado en la pestaña Contactos
     if(has('A0_1') && !has('A0_2') && !TOUCH.A0_2){ const c=contactoDe(R.A0_1); if(c) R.A0_2=esPnp(c); }
+    // C2 = 10 preseleccionado si figura como policía
+    if(R.A0_2===1 && R.C1===1 && !has('C2') && !TOUCH.C2) R.C2=10;
   }
 }
 
@@ -489,7 +509,7 @@ function respondida(it){
   if(it.type==='multi') return it.opts.some(([x])=>R[x]===1) && !(it.esp && Object.entries(it.esp).some(([c,x])=>R[c]===1 && !has(x)));
   if(!has(it.id)) return false;
   if(it.txt && !has(it.txt)) return false;
-  if(it.esp && Object.entries(it.esp).some(([c,x])=>String(R[it.id])===String(c) && !has(x))) return false;
+  if(it.esp && Object.entries(it.esp).some(([c,x])=>String(R[it.id])===String(c) && !has(x) && !(it.espOpt||[]).includes(Number(c)))) return false;
   return true;
 }
 function progreso(){
@@ -626,7 +646,7 @@ function render(){
 function findItem(id){ for(const s of S) for(const it of s.items) if(it.id===id) return it; return null; }
 $('secBody').addEventListener('change', e=>{
   const el=e.target;
-  if(el.type==='radio'){ R[el.name]=Number(el.value); TOUCH[el.name]=true; if(AUTO[el.name]) delete AUTO[el.name]; render(); return; }
+  if(el.type==='radio'){ const it0=findItem(el.name); if(it0 && it0.esp && R[el.name]!==Number(el.value)) Object.values(it0.esp).forEach(x=>delete R[x]); R[el.name]=Number(el.value); TOUCH[el.name]=true; if(AUTO[el.name]) delete AUTO[el.name]; render(); return; }
   if(el.dataset.multi){
     const it=findItem(el.dataset.multi);
     it.opts.forEach(([x])=>{ if(R[x]===undefined) R[x]=0; });
@@ -675,7 +695,7 @@ function validate(){
     }
     if(!msg && it.txt && !has(it.txt)) msg='Anote la respuesta tal como la dice la persona.';
     if(!msg && it.esp){
-      const pend=Object.entries(it.esp).find(([c,x])=> (it.type==='multi'?R[c]===1:String(R[it.id])===String(c)) && !has(x));
+      const pend=Object.entries(it.esp).find(([c,x])=> (it.type==='multi'?R[c]===1:String(R[it.id])===String(c)) && !has(x) && !(it.espOpt||[]).includes(Number(c)));
       if(pend) msg='Falta especificar.';
     }
     if(msg){
@@ -709,6 +729,9 @@ $('btnIncompleta').addEventListener('click', ()=>{
 const pad=n=>String(n).padStart(2,'0');
 const today=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const hhmm=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const mmss=sec=>{ const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), x=sec%60; return (h?h+':'+pad(m):pad(m))+':'+pad(x); };
+function tick(){ const t=$('timer'); if(!t) return; if(META && META.t0 && !$('scrForm').classList.contains('hidden')){ t.textContent='⏱ '+mmss(Math.max(0,Math.floor((Date.now()-META.t0)/1000))); t.classList.remove('hidden'); } else t.classList.add('hidden'); }
+setInterval(tick,1000);
 const uuid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2));
 
 function startRecord(c){
@@ -720,14 +743,15 @@ function startRecord(c){
     const y=Number(anio(c['Ciclo de egreso'])), q8=findItem('P8');
     if(y>=q8.min && y<=q8.max){ R.P8=y; AUTO.P8=true; }
   }
-  META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now)};
+  META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now), t0:Date.now()};
   show('scrForm'); render(); window.scrollTo({top:0});
 }
 function saveDraft(){ if(META.id_registro) LS.set(K_BORR,{R,META,AUTO,TOUCH,CUR}); }
 
 function finish(z1){
   prune();
-  const rec={...META, hora_fin:hhmm(new Date()), modo_envio:1};
+  const rec={...META, hora_fin:hhmm(new Date()), duracion_seg:META.t0?Math.max(0,Math.round((Date.now()-META.t0)/1000)):'', modo_envio:1};
+  delete rec.t0;
   if(z1){ R.Z1=z1; if(z1===2){ const last=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop(); R.Z1_ult=last||''; } else delete R.Z1_ult; }
   // las preguntas múltiples aplicadas guardan 0 en las opciones no marcadas
   S.forEach(s=>s.items.forEach(it=>{ if(it.type==='multi' && visible(it) && it.opts.some(([x])=>has(x))) it.opts.forEach(([x])=>{ if(!has(x)) R[x]=0; }); }));
@@ -748,7 +772,7 @@ function finish(z1){
   LS.del(K_BORR); META={};
   $('doneTitle').textContent='Registro guardado';
   $('doneText').textContent = z1===1 ? 'La encuesta se completó.' : (z1===2 ? 'La encuesta se guardó como incompleta.' : 'Se registró el resultado de la llamada.');
-  $('doneList').innerHTML = `<li>Código de la persona egresada: <b>${esc(rec.A0_1)}</b></li><li>Resultado: <b>${esc(ESTADO[est][0])}</b> · intento ${esc(rec.A0_3)}</li>`;
+  $('doneList').innerHTML = `<li>Código de la persona egresada: <b>${esc(rec.A0_1)}</b></li><li>Resultado: <b>${esc(ESTADO[est][0])}</b> · intento ${esc(rec.A0_3)}</li>`+(rec.duracion_seg!==''?`<li>Duración: <b>${mmss(rec.duracion_seg)}</b></li>`:'');
   show('scrDone'); updateStatus(); sync();
 }
 
@@ -789,6 +813,7 @@ function show(id){
   $('foot').classList.toggle('hidden', id!=='scrForm');
   if(id!=='scrForm') $('progress').style.width='0';
   $('progRow').classList.toggle('hidden', id!=='scrForm');
+  tick();
   const ses=LS.get(K_SES,null);
   $('who').textContent = ses ? `Encuestador/a: ${ses.nombre||ses.codigo}` : '';
   $('btnSalir').classList.toggle('hidden', !ses || id==='scrLogin');
