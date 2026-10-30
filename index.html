@@ -262,6 +262,18 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     </div>
   </section>
 
+  <!-- Terminar la encuesta a la mitad -->
+  <section id="scrCorte" class="card narrow hidden">
+    <h1>Terminar la encuesta aquí</h1>
+    <p class="lead">Se guardan las respuestas registradas hasta ahora<span id="corteUlt"></span>. Las observaciones se envían con el registro.</p>
+    <label class="field">Motivo <span class="ins" style="display:inline">(no se lee; marcar según lo ocurrido)</span></label>
+    <div class="opts" id="corteOpts" role="radiogroup"></div>
+    <label class="field" for="corteObs">Observaciones del encuestador/a</label>
+    <textarea id="corteObs" placeholder="Por ejemplo: en qué pregunta decidió no continuar y por qué"></textarea>
+    <div class="err-text" id="corteErr"></div>
+    <div class="row" style="margin-top:20px"><button class="btn" id="btnCorteOk" type="button">Guardar como incompleta</button><button class="btn ghost" id="btnCorteVolver" type="button">Volver a la encuesta</button></div>
+  </section>
+
   <!-- Guardado -->
   <section id="scrDone" class="card narrow hidden">
     <h1 id="doneTitle">Registro guardado</h1>
@@ -276,7 +288,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     <button class="btn ghost" id="btnPrev" type="button">Anterior</button>
     <span class="hint" id="footHint"></span>
     <span class="spacer"></span>
-    <button class="btn warn hidden" id="btnIncompleta" type="button">Terminar como incompleta</button>
+    <button class="btn warn hidden" id="btnIncompleta" type="button">Terminar encuesta aquí</button>
     <button class="btn" id="btnNext" type="button">Siguiente</button>
   </div>
 </div>
@@ -287,7 +299,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
    ========================================================= */
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzveEJfhjhjusRqwlBREcdT07ptXXbUMBlgIz6TbKJDwnukjvgxvOoBoIhezO8Fp-AFSg/exec',   // termina en /exec
-  VERSION: 'v1.0',
+  VERSION: 'v1.1',
   // URL /exec del Apps Script que vive en el Sheets de contactos. Si queda vacía, se usan contactos de prueba (nombres inventados).
   CONTACTOS_URL: 'https://script.google.com/macros/s/AKfycbznz_RHI0NZMrtfVAZysuH4swx86V6YeLH-sTPyE-OKzJZHHarIvygl8lGt1IHZDmBB9g/exec'
 };
@@ -428,11 +440,12 @@ const S = [
  ]},
  {k:'Z', t:'Cierre', items:[
   {type:'read', html:'<p>Hemos terminado la encuesta. Muchas gracias por su tiempo y por compartir su experiencia.</p>'},
-  {type:'textarea', id:'OBS', code:'', q:'Observaciones del encuestador/a', ins:'Opcional.', optional:true}
+  {type:'textarea', id:'OBS', code:'', q:'Observaciones del encuestador/a', ins:'Opcional. Se envía aunque la encuesta no se complete.', optional:true, always:true}
  ]}
 ];
 // Las secciones P a Z solo se aplican si la persona aceptó participar.
-S.forEach(s=>{ if(!'AB'.includes(s.k)) s.items.forEach(it=>{ const w=it.when; it.when = w ? ()=>ACC() && w() : ACC; }); });
+// OBS (always) se muestra en toda llamada: también si no contestan, no acepta o no termina.
+S.forEach(s=>{ if(!'AB'.includes(s.k)) s.items.forEach(it=>{ if(it.always) return; const w=it.when; it.when = w ? ()=>ACC() && w() : ACC; }); });
 
 const HEADERS = ["id_registro","version_form","encuestador","fecha_llamada","hora_inicio","hora_fin","duracion_seg","modo_envio","ts_envio","A0_1","A0_2","A0_3","A0_4","A0_5","A0_6","B0","B0_cita","P1","P2","P2_esp","P3","P3_esp","P4","P5","P5_esp","P6","P7","P8","P9","P9_esp","C1","C2","C2_esp","C3","C4_txt","C4","C4_esp","C5_txt","C5","C5_esp","C6","C6_esp","CP1_txt","CP1","CP1_esp","CP2","CP2_esp","C7","D1","D2","D2_esp","D3","D4_txt","D4","D4_esp","D5_txt","D5","D5_esp","D6","D6_esp","DP1","DP2","DP3_txt","DP3","DP3_esp","DP4","DP4_esp","DP5","D7","D8","D9","E0","E1","E1_PNP","E2a","E2b","E2c","E2d","E2e","E2d_esp","E3","F1","F2","F3","F4","G1a","G1b","G1c","G1d","G1e","G1f","G1g","G2a","G2b","G2c","G2d","G2e","G2f","G2g","H1a","H1b","H1c","H1d","H1e","H2a","H2b","H2c","H2d","H2e","H2f","H2g","H2f_esp","I1","I2","I3","I4a","I4b","I4c","I4d","I4e","I4f","I4g","I4h","I4i","I4h_esp","J1","J2a","J2b","J2c","J2d","J2e","J2e_esp","J3a","J3b","J3c","J3d","J3e","J3f","J3e_esp","J4a","J4b","J4c","J4d","J4e","J4f","J4g","J4_esp","J5","Z1","Z1_ult","OBS"];
 
@@ -530,7 +543,7 @@ function visibleSections(){
   for(let i=0;i<S.length;i++){
     if(!secVisible(i)) continue;
     out.push(i);
-    if(terminal() && i>=1 && !ACC()) break;
+    if(terminal() && i>=1 && !ACC()){ const z=S.length-1; if(z>i && secVisible(z)) out.push(z); break; }
   }
   return out;
 }
@@ -723,9 +736,25 @@ $('btnPrev').addEventListener('click', ()=>{
   const vs=visibleSections(), pos=vs.indexOf(CUR);
   if(pos>0){ CUR=vs[pos-1]; render(); window.scrollTo({top:0}); }
 });
+// Z1 al terminar antes del final: 2 = se cortó la llamada, 3 = la persona decidió no continuar, 4 = pide continuar en otro momento
+const CORTE=[[2,'Se cortó la llamada'],[3,'La persona decidió no continuar'],[4,'Pide continuar la encuesta en otro momento']];
+let CORTE_SEL=null;
+function renderCorte(){
+  $('corteOpts').innerHTML=CORTE.map(([c,t])=>`<label class="opt${CORTE_SEL===c?' sel':''}"><input type="radio" name="corte" value="${c}" ${CORTE_SEL===c?'checked':''}><span class="code">${c}</span><span>${esc(t)}</span></label>`).join('');
+}
+function obsCorte(){ const x=$('corteObs').value.trim(); if(x) R.OBS=x; else delete R.OBS; saveDraft(); }
 $('btnIncompleta').addEventListener('click', ()=>{
-  if(!confirm('La encuesta se guardará como incompleta con las respuestas registradas hasta ahora. ¿Continuar?')) return;
-  finish(2);
+  CORTE_SEL=null; $('corteErr').textContent=''; $('corteObs').value=R.OBS||'';
+  const ult=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop();
+  $('corteUlt').textContent = ult ? ` (última respondida: ${ult})` : '';
+  renderCorte(); show('scrCorte'); window.scrollTo({top:0});
+});
+$('corteOpts').addEventListener('change', e=>{ CORTE_SEL=Number(e.target.value); $('corteErr').textContent=''; renderCorte(); });
+$('corteObs').addEventListener('input', obsCorte);
+$('btnCorteVolver').addEventListener('click', ()=>{ obsCorte(); show('scrForm'); render(); });
+$('btnCorteOk').addEventListener('click', ()=>{
+  if(!CORTE_SEL){ $('corteErr').textContent='Marque el motivo.'; return; }
+  obsCorte(); finish(CORTE_SEL);
 });
 
 /* =========================================================
@@ -757,7 +786,7 @@ function finish(z1){
   prune();
   const rec={...META, hora_fin:hhmm(new Date()), duracion_seg:META.t0?Math.max(0,Math.round((Date.now()-META.t0)/1000)):'', modo_envio:1};
   delete rec.t0;
-  if(z1){ R.Z1=z1; if(z1===2){ const last=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop(); R.Z1_ult=last||''; } else delete R.Z1_ult; }
+  if(z1){ R.Z1=z1; if(z1>=2){ const last=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop(); R.Z1_ult=last||''; } else delete R.Z1_ult; }
   // las preguntas múltiples aplicadas guardan 0 en las opciones no marcadas
   S.forEach(s=>s.items.forEach(it=>{ if(it.type==='multi' && visible(it) && it.opts.some(([x])=>has(x))) it.opts.forEach(([x])=>{ if(!has(x)) R[x]=0; }); }));
   HEADERS.forEach(h=>{ if(!(h in rec)) rec[h] = has(h) ? R[h] : ''; });
@@ -770,13 +799,13 @@ function finish(z1){
       telefono:c['Celular (movil)']||c['Teléfono (fijo)']||'', correo:c['Correo externo']||c['Correo PUCP']||'' };
   }
   const cola=LS.get(K_COLA,[]); cola.push(rec); LS.set(K_COLA,cola);
-  const est = z1===1?'completa' : z1===2?'incompleta' : R.B0===2?'rechazo' : R.B0===3?'cita' : R.A0_6===2?'otra' : R.A0_4===2?'nocontesta' : 'incompleta';
+  const est = z1===1?'completa' : z1===2?'incompleta' : z1===3?'abandona' : z1===4?'cita' : R.B0===2?'rechazo' : R.B0===3?'cita' : R.A0_6===2?'otra' : R.A0_4===2?'nocontesta' : 'incompleta';
   const llm=LS.get(K_LLAM(),{}), prev=llm[rec.A0_1];
   llm[rec.A0_1]={estado:est, intentos:(prev?prev.intentos:0)+1, fecha:today(new Date()), hora:hhmm(new Date()), cita:R.B0_cita||''};
   LS.set(K_LLAM(),llm); if(contactoDe(rec.A0_1)) CSEL=String(rec.A0_1);
   LS.del(K_BORR); META={};
   $('doneTitle').textContent='Registro guardado';
-  $('doneText').textContent = z1===1 ? 'La encuesta se completó.' : (z1===2 ? 'La encuesta se guardó como incompleta.' : 'Se registró el resultado de la llamada.');
+  $('doneText').textContent = z1===1 ? 'La encuesta se completó.' : (z1>=2 ? 'La encuesta se guardó como incompleta: '+CORTE.find(x=>x[0]===z1)[1].toLowerCase()+'.' : 'Se registró el resultado de la llamada.');
   $('doneList').innerHTML = `<li>Código de la persona egresada: <b>${esc(rec.A0_1)}</b></li><li>Resultado: <b>${esc(ESTADO[est][0])}</b> · intento ${esc(rec.A0_3)}</li>`+(rec.duracion_seg!==''?`<li>Duración: <b>${mmss(rec.duracion_seg)}</b></li>`:'');
   show('scrDone'); updateStatus(); sync();
 }
@@ -814,7 +843,7 @@ function updateStatus(){
    SESIÓN Y PANTALLAS
    ========================================================= */
 function show(id){
-  ['scrLogin','scrHome','scrForm','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
+  ['scrLogin','scrHome','scrForm','scrCorte','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
   $('foot').classList.toggle('hidden', id!=='scrForm');
   if(id!=='scrForm') $('progress').style.width='0';
   $('progRow').classList.toggle('hidden', id!=='scrForm');
@@ -937,8 +966,8 @@ async function cargarContactos(forzar){
   }
 }
 
-const ESTADO={completa:['Completada','ok'],incompleta:['Incompleta','warn'],rechazo:['No acepta','no'],cita:['Llamar de nuevo','info'],otra:['No estaba','info'],nocontesta:['No contestó','info']};
-const cerrado = e => e==='completa' || e==='rechazo';
+const ESTADO={completa:['Completada','ok'],incompleta:['Incompleta','warn'],abandona:['No quiso continuar','no'],rechazo:['No acepta','no'],cita:['Llamar de nuevo','info'],otra:['No estaba','info'],nocontesta:['No contestó','info']};
+const cerrado = e => e==='completa' || e==='rechazo' || e==='abandona';
 const llamDe = cod => LS.get(K_LLAM(),{})[cod] || null;
 let FILTRO='todos';
 function dato(k,v){ return vacio(v) ? '' : `<div><span>${esc(k)}</span><b>${esc(val(v))}</b></div>`; }
