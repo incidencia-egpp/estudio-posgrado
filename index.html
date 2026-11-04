@@ -76,6 +76,11 @@ nav.sections li b{white-space:nowrap}
 nav.sections li.lock b::after{content:"🔒";margin-left:3px;font-size:.7rem}
 .lockbar{background:#EEF0F4;border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:.92rem;color:var(--slate)}
 .locked{opacity:.6;pointer-events:none}
+.lockbar .btn{margin-top:10px}
+#bloqPestana{position:fixed;inset:0;z-index:999;background:rgba(15,27,61,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+#bloqPestana .card{max-width:480px}
+.recup{margin-top:18px;font-size:.92rem;color:var(--slate)}
+.recup textarea{width:100%;min-height:90px;margin:8px 0;font-family:monospace;font-size:.8rem}
 nav.sections li.go{cursor:pointer}
 nav.sections li.go:hover{background:var(--tint)}
 .revbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#FFF6E5;border:1px solid #F0D9A8;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:.92rem}
@@ -253,6 +258,11 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
       <button class="btn ghost" id="btnNueva" type="button">Llamar a alguien que no está en mi lista</button>
       <button class="btn ghost" id="btnRespaldo" type="button">Descargar respaldo de pendientes</button>
     </div>
+    <details class="recup"><summary>Recuperar una encuesta desde un respaldo (uso del equipo de investigación)</summary>
+      <p>Pega el contenido de la columna <b>datos</b> o <b>datos_max</b> de la hoja «borradores» del Sheets, o una encuesta del archivo de borradores descartados. Se abrirá como encuesta sin terminar.</p>
+      <textarea id="recupTxt" placeholder='{"R":{...},"META":{...}}'></textarea>
+      <button class="btn ghost" id="btnRecup" type="button">Cargar encuesta</button> <span id="recupMsg"></span>
+    </details>
   </section>
 
   <!-- Formulario -->
@@ -273,8 +283,9 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
 
   <!-- Terminar la encuesta a la mitad -->
   <section id="scrCorte" class="card narrow hidden">
-    <h1>Terminar la encuesta aquí</h1>
+    <h1>Terminar la encuesta sin completar</h1>
     <p class="lead">Se guardan las respuestas registradas hasta ahora<span id="corteUlt"></span>. Las observaciones se envían con el registro.</p>
+    <div class="msg err" style="margin:0 0 16px">Usa esta opción solo si la encuesta <b>no va a continuar</b> (se cortó la llamada, la persona no quiere seguir o pide otro momento). Al guardar, el registro se <b>cierra y se envía como incompleto</b> y ya no se puede seguir respondiendo. Si entraste aquí por error, pulsa <b>«Volver a la encuesta sin cerrar»</b>: no se pierde nada.</div>
     <label class="field">Motivo <span class="ins" style="display:inline">(no se lee; marcar según lo ocurrido)</span></label>
     <div class="opts" id="corteOpts" role="radiogroup"></div>
     <label class="field" for="corteObs">Observaciones del encuestador/a</label>
@@ -282,7 +293,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     <label class="field">Revisar preguntas <span class="ins" style="display:inline">(toca una sección para ver sus preguntas y códigos; lo marcado y lo anotado se conserva)</span></label>
     <div class="chips" id="corteNav" role="group" aria-label="Secciones"></div>
     <div class="err-text" id="corteErr"></div>
-    <div class="row" style="margin-top:20px"><button class="btn" id="btnCorteOk" type="button">Guardar como incompleta</button><button class="btn ghost" id="btnCorteVolver" type="button">Volver a la encuesta</button></div>
+    <div class="row" style="margin-top:20px"><button class="btn" id="btnCorteVolver" type="button">Volver a la encuesta sin cerrar</button><button class="btn warn" id="btnCorteOk" type="button">Cerrar y guardar como incompleta</button></div>
   </section>
 
   <!-- Guardado -->
@@ -294,12 +305,22 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
   </section>
 </main>
 
+<!-- La encuesta se abrió en otra pestaña o ventana -->
+<div id="bloqPestana" class="hidden" role="alertdialog" aria-modal="true">
+  <div class="card narrow">
+    <h1>Encuesta abierta en otra pestaña</h1>
+    <p class="lead">Esta encuesta se abrió en otra pestaña o ventana. Para no mezclar ni perder respuestas, esta pestaña quedó bloqueada. <b>Sigue la encuesta en la otra pestaña</b> y cierra esta.</p>
+    <p class="lead">Solo si cerraste la otra pestaña, pulsa el botón: se abrirá lo último que quedó guardado.</p>
+    <button class="btn" id="btnTomarPestana" type="button">Seguir en esta pestaña</button>
+  </div>
+</div>
+
 <div class="foot hidden" id="foot">
   <div class="in">
     <button class="btn ghost" id="btnPrev" type="button">Anterior</button>
     <span class="hint" id="footHint"></span>
     <span class="spacer"></span>
-    <button class="btn warn hidden" id="btnIncompleta" type="button">Terminar encuesta aquí</button>
+    <button class="btn warn hidden" id="btnIncompleta" type="button">Terminar encuesta aquí sin completar</button>
     <button class="btn" id="btnNext" type="button">Siguiente</button>
   </div>
 </div>
@@ -310,7 +331,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
    ========================================================= */
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzveEJfhjhjusRqwlBREcdT07ptXXbUMBlgIz6TbKJDwnukjvgxvOoBoIhezO8Fp-AFSg/exec',   // termina en /exec
-  VERSION: 'v1.1',
+  VERSION: 'v1.2',
   // URL /exec del Apps Script que vive en el Sheets de contactos. Si queda vacía, se usan contactos de prueba (nombres inventados).
   CONTACTOS_URL: 'https://script.google.com/macros/s/AKfycbznz_RHI0NZMrtfVAZysuH4swx86V6YeLH-sTPyE-OKzJZHHarIvygl8lGt1IHZDmBB9g/exec'
 };
@@ -363,7 +384,7 @@ const S = [
   {type:'radio', id:'P5', code:'P5', q:'¿En qué universidad o institución realizó principalmente sus estudios de pregrado?', opts:[[1,'PUCP'],[4,'Escuela de oficiales. Especificar'],[2,'Otra institución en el Perú. Especificar'],[3,'Institución fuera del Perú. Especificar país'],[99,'Prefiere no responder']], esp:{2:'P5_esp',3:'P5_esp',4:'P5_esp'}, espOpt:[4]},
   {type:'number', id:'P6', code:'P6', q:'Aproximadamente, ¿cuántos años de experiencia laboral tiene en total?', ins:'Contar desde las prácticas.', unit:'años', min:0, max:60, nr:[99,'Prefiere no responder']},
   {type:'note', html:'P8: completar con el registro de egresados. Preguntar solo si no se cuenta con el dato.'},
-  {type:'number', id:'P8', code:'P8', q:'¿En qué año terminó de cursar su maestría, es decir, su último semestre de clases?', min:2018, max:2026, nr:[98,'No recuerda']},
+  {type:'number', id:'P8', code:'P8', q:'¿En qué año terminó de cursar su maestría, es decir, su último semestre de clases?', min:1950, max:new Date().getFullYear(), nr:[98,'No recuerda']},
   {type:'radio', id:'P9', code:'P9', q:'¿Cuál fue el principal motivo por el que eligió la Maestría en Gobierno y Políticas Públicas de la PUCP?', ins:'No leer alternativas. Marcar la más cercana a la respuesta.', when:()=>!PNP(), opts:[[1,'Prestigio de la PUCP'],[2,'Plan de estudios o cursos'],[3,'Docentes'],[4,'Modalidad o flexibilidad de horarios'],[5,'Costo o facilidades de financiamiento'],[6,'Recomendación de colegas, egresados/as o conocidos'],[95,'Otro. Especificar'],[96,'No aplica'],[98,'No recuerda']], optWhen:{96:()=>false}, esp:{95:'P9_esp'}}
  ]},
  {k:'C', t:'Situación laboral antes de la maestría', items:[
@@ -467,6 +488,9 @@ let R = {};            // respuestas
 let META = {};         // metadatos del registro
 let AUTO = {};         // valores puestos automáticamente
 let TOUCH = {};        // variables modificadas por el encuestador
+let EDIT_AB = false;   // A y B desbloqueadas a pedido (se protegen cuando la encuesta ya avanzó)
+let ULT_ENV = null;    // última sección cuyo borrador se envió al Sheets
+let GUARD = {};        // respuestas de preguntas que dejaron de aplicar: se guardan aparte y vuelven si la pregunta vuelve a aplicar
 let CUR = 0;           // sección actual (índice en S)
 let MAXC = 0;          // sección más avanzada a la que se llegó (se puede volver a cualquiera hasta ahí)
 let REV = false;       // revisando preguntas desde la pantalla de observaciones
@@ -477,6 +501,8 @@ const LS = {
   set:(k,x)=>{ try{ localStorage.setItem(k,JSON.stringify(x)); }catch(e){ alert('No se pudo guardar en este equipo. Libere espacio o descargue el respaldo.'); } },
   del:k=>{ try{ localStorage.removeItem(k); }catch(e){} }
 };
+const K_PAPEL='mgpp_papelera';
+const K_TAB='mgpp_pestana';      // pestaña que tiene abierta la encuesta (solo una puede guardar)   // encuestas sin terminar que se descartaron (últimas 30), para poder recuperarlas
 const K_SES='mgpp_sesion', K_COLA='mgpp_cola', K_BORR='mgpp_borrador', K_CONT='mgpp_contactos', K_PNP='mgpp_pnp';
 const K_LLAM=()=>'mgpp_llam_'+(LS.get(K_SES,{}).codigo||'');
 
@@ -498,12 +524,19 @@ function prune(){
   for(let pass=0; pass<4; pass++){
     S.forEach(s=>s.items.forEach(it=>{
       const vis=visible(it);
-      if(!vis){ varsOf(it).forEach(x=>{ if(!AUTO[x]) delete R[x]; }); return; }
+      if(!vis){ varsOf(it).forEach(x=>{ if(AUTO[x]) return; if(has(x)) GUARD[x]=R[x]; delete R[x]; }); return; }
+      // la pregunta volvió a aplicar: se recuperan las respuestas guardadas aparte
+      const espSet = it.esp ? new Set(Object.values(it.esp)) : null;
+      varsOf(it).forEach(x=>{
+        if(has(x) || !(x in GUARD)) return;
+        if(espSet && espSet.has(x) && !Object.entries(it.esp).some(([c,y])=>y===x && (it.type==='multi'?R[c]===1:String(R[it.id])===String(c)))) return;
+        R[x]=GUARD[x]; delete GUARD[x];
+      });
       if(it.optWhen && has(it.id) && !optVisible(it,R[it.id])) delete R[it.id];
       if(it.esp) Object.entries(it.esp).forEach(([c,x])=>{
         const on = it.type==='multi' ? R[c]===1 : String(R[it.id])===String(c);
         const shared = Object.entries(it.esp).some(([c2,x2])=>x2===x && (it.type==='multi'?R[c2]===1:String(R[it.id])===String(c2)));
-        if(!on && !shared) delete R[x];
+        if(!on && !shared){ if(has(x)) GUARD[x]=R[x]; delete R[x]; }
       });
     }));
     // C5/D5 = 7 para independientes
@@ -647,6 +680,8 @@ function render(){
   const vs=visibleSections();
   if(!vs.includes(CUR) && !BLOQ) CUR = vs.filter(i=>i<CUR).pop() ?? vs[0];
   const bloq = !vs.includes(CUR);
+  if(!'AB'.includes(S[CUR].k)) EDIT_AB=false;
+  const protegida = !bloq && 'AB'.includes(S[CUR].k) && avanzada() && !EDIT_AB;
   if(!REV && !bloq) MAXC=Math.max(MAXC,CUR);
   const s=S[CUR];
   $('secLetter').textContent=s.k; $('secTitle').textContent=s.t;
@@ -658,6 +693,15 @@ function render(){
     body.appendChild(av);
     const box=document.createElement('div'); box.className='locked';
     s.items.filter(it=>it.type!=='read').forEach(it=>box.appendChild(renderItem(it)));
+    box.querySelectorAll('input,textarea,select').forEach(x=>x.disabled=true);
+    body.appendChild(box);
+  } else if(protegida){
+    // la encuesta ya avanzó: A y B se ven, pero no se pueden tocar por accidente (un cambio aquí deja sin efecto el resto)
+    const av=document.createElement('div'); av.className='lockbar';
+    av.innerHTML='🔒 <b>Sección protegida.</b> La encuesta ya avanzó: un cambio aquí puede dejar sin efecto las demás respuestas. Si de verdad necesitas corregir algo, pulsa el botón.<br><button class="btn ghost" id="btnEditAB" type="button">Editar esta sección</button>';
+    body.appendChild(av);
+    const box=document.createElement('div'); box.className='locked';
+    s.items.filter(visible).forEach(it=>box.appendChild(renderItem(it)));
     box.querySelectorAll('input,textarea,select').forEach(x=>x.disabled=true);
     body.appendChild(box);
   } else s.items.filter(visible).forEach(it=>body.appendChild(renderItem(it)));
@@ -677,14 +721,17 @@ function render(){
   $('progLeft').textContent = pg.total-pg.hechas===0 ? 'Todo respondido' : `Faltan ${pg.total-pg.hechas}`;
   $('progRow').title = 'El total se ajusta según las respuestas: algunas preguntas se saltan o se abren según lo que responda la persona.';
   $('btnPrev').disabled = bloq ? !vs.some(i=>i<CUR) : pos<=0;
-  $('btnNext').textContent = (last && !bloq) ? 'Guardar registro' : 'Siguiente';
+  $('btnNext').textContent = (last && !bloq) ? 'Guardar registro completo' : 'Siguiente';
   $('btnIncompleta').classList.toggle('hidden', REV || !ACC() || (S[CUR].k==='Z' && primeraIncompleta()===undefined));
   $('revBar').classList.toggle('hidden', !REV);
   $('btnNext').classList.toggle('hidden', REV);
   renderSide();
   $('footHint').textContent = R.A0_1 ? `Código ${R.A0_1}` : '';
   saveDraft();
+  if(META.id_registro && CUR!==ULT_ENV){ ULT_ENV=CUR; enviarBorrador(); }   // copia en el Sheets al cambiar de sección
 }
+/* Ya hay respuestas después de B (sin contar las automáticas ni las observaciones) */
+function avanzada(){ return ACC() && Object.keys(R).some(k=>!/^(A0_|B0|OBS|Z1)/.test(k) && has(k) && !AUTO[k]); }
 
 /* =========================================================
    EVENTOS DEL FORMULARIO
@@ -692,7 +739,7 @@ function render(){
 function findItem(id){ for(const s of S) for(const it of s.items) if(it.id===id) return it; return null; }
 $('secBody').addEventListener('change', e=>{
   const el=e.target;
-  if(el.type==='radio'){ const it0=findItem(el.name); if(it0 && it0.esp && R[el.name]!==Number(el.value)) Object.values(it0.esp).forEach(x=>delete R[x]); R[el.name]=Number(el.value); TOUCH[el.name]=true; if(AUTO[el.name]) delete AUTO[el.name]; render(); return; }
+  if(el.type==='radio'){ if(!confirmarCambio(el.name, Number(el.value))){ render(); return; } const it0=findItem(el.name); if(it0 && it0.esp && R[el.name]!==Number(el.value)) Object.values(it0.esp).forEach(x=>{ if(has(x)) GUARD[x]=R[x]; delete R[x]; }); R[el.name]=Number(el.value); TOUCH[el.name]=true; if(AUTO[el.name]) delete AUTO[el.name]; render(); return; }
   if(el.dataset.multi){
     const it=findItem(el.dataset.multi);
     it.opts.forEach(([x])=>{ if(R[x]===undefined) R[x]=0; });
@@ -715,11 +762,26 @@ $('secBody').addEventListener('change', e=>{
   if(el.dataset.text){ const x=el.value.trim(); if(x) R[el.dataset.text]=x; else delete R[el.dataset.text]; render(); return; }
   if(el.dataset.num){ const x=el.value.trim(); if(x==='') delete R[el.dataset.num]; else R[el.dataset.num]=Number(x); render(); return; }
 });
+$('secBody').addEventListener('click', e=>{
+  if(e.target.id!=='btnEditAB') return;
+  if(!confirm('Vas a editar una sección de la llamada o del consentimiento. Si cambias una respuesta, el formulario te avisará antes de dejar sin efecto otras preguntas. ¿Editar?')) return;
+  EDIT_AB=true; render();
+});
 $('secBody').addEventListener('input', e=>{
   const el=e.target;
   if(el.dataset.text){ const x=el.value.trim(); if(x) R[el.dataset.text]=x; else delete R[el.dataset.text]; saveDraft(); }
   if(el.dataset.num){ const x=el.value.trim(); if(x==='') delete R[el.dataset.num]; else R[el.dataset.num]=Number(x); saveDraft(); }
 });
+
+/* Antes de cambiar una respuesta: ¿cuántas preguntas ya respondidas dejarían de aplicar? (por ejemplo, al tocar sin querer B0 = No) */
+function confirmarCambio(id, nv){
+  const old=R[id]; if(old===undefined || old===nv) return true;
+  const antes=S.flatMap(s=>s.items).filter(it=>it.id!==id && !['read','note'].includes(it.type) && visible(it) && varsOf(it).some(x=>has(x) && !AUTO[x]));
+  R[id]=nv; const pierde=antes.filter(it=>!visible(it)); R[id]=old;
+  if(!pierde.length) return true;
+  const cods=pierde.map(it=>it.code||it.id).filter(Boolean);
+  return confirm(`ATENCIÓN: si cambias esta respuesta, ${pierde.length} pregunta${pierde.length>1?'s':''} ya respondida${pierde.length>1?'s':''} deja${pierde.length>1?'n':''} de aplicar (${cods.slice(0,10).join(', ')}${cods.length>10?'…':''}).\n\nSi la tocaste por error, pulsa «Cancelar» y no cambia nada.\n\n¿Cambiar la respuesta de todas formas?`);
+}
 
 /* Validación de la sección actual */
 function validate(){
@@ -804,6 +866,7 @@ function abrirCorte(){
   const vs=visibleSections().filter(i=>S[i].k!=='Z');
   $('corteNav').innerHTML=vs.map(i=>`<button type="button" class="chip" data-i="${i}">${S[i].k} · ${esc(S[i].t)}</button>`).join('');
   renderCorte(); show('scrCorte'); window.scrollTo({top:0});
+  enviarBorrador();
 }
 $('btnIncompleta').addEventListener('click', abrirCorte);   // el motivo ya marcado se conserva
 $('corteNav').addEventListener('click', e=>{
@@ -816,7 +879,9 @@ $('corteObs').addEventListener('input', obsCorte);
 $('btnCorteVolver').addEventListener('click', ()=>{ obsCorte(); REV=false; if(CUR_CORTE!==null) CUR=CUR_CORTE; show('scrForm'); render(); });
 $('btnCorteOk').addEventListener('click', ()=>{
   if(!CORTE_SEL){ $('corteErr').textContent='Marque el motivo.'; return; }
-  obsCorte(); finish(CORTE_SEL);
+  obsCorte();
+  if(!confirm('El registro se cerrará como INCOMPLETO y ya no se podrá seguir respondiendo. ¿Cerrar la encuesta?')) return;
+  finish(CORTE_SEL);
 });
 
 /* =========================================================
@@ -832,7 +897,8 @@ const uuid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+
 
 function startRecord(c){
   const now=new Date(), ses=LS.get(K_SES,{});
-  R={}; AUTO={}; TOUCH={}; CUR=0; MAXC=0; REV=false; BLOQ=false; CORTE_SEL=null;
+  tomarPestana(); ULT_ENV=null; EDIT_AB=false;
+  R={}; AUTO={}; TOUCH={}; GUARD={}; CUR=0; MAXC=0; REV=false; BLOQ=false; CORTE_SEL=null;
   if(c){
     R.A0_1=c['Código PUCP']; R.A0_2=esPnp(c);
     const ll=llamDe(c[CK]); if(!ll) R.A0_3=1; else if(!cerrado(ll.estado)) R.A0_3=Math.min(2,ll.intentos+1);
@@ -842,7 +908,37 @@ function startRecord(c){
   META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now), t0:Date.now()};
   show('scrForm'); render(); window.scrollTo({top:0});
 }
-function saveDraft(){ if(META.id_registro) LS.set(K_BORR,{R,META,AUTO,TOUCH,CUR,MAXC,CORTE_SEL}); }
+/* Copia del borrador en la hoja «borradores» del Sheets (una fila por encuesta; se guarda también la versión con más respuestas) */
+function enviarBorrador(){
+  if(MODO_PRUEBA || !navigator.onLine || !META.id_registro || !esDueno()) return;
+  const ses=LS.get(K_SES,{});
+  const d={R,META,AUTO,TOUCH,GUARD,CUR,MAXC,CORTE_SEL};
+  const n=Object.keys(R).filter(k=>has(k) && !AUTO[k]).length + Object.keys(GUARD).length;
+  fetch(CONFIG.SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({codigo:ses.codigo, borrador:{id_registro:META.id_registro, encuestador:META.encuestador||'', version_form:META.version_form||'',
+      A0_1:R.A0_1||'', seccion:S[CUR]?S[CUR].k:'', n_respuestas:n, datos:JSON.stringify(d)}})}).catch(()=>{});
+}
+/* Una sola pestaña puede tener abierta la encuesta: si se abre en otra, esta se bloquea */
+let TAB_ID=null;
+const tabId=()=>TAB_ID||(TAB_ID=uuid());
+function esDueno(){ const t=LS.get(K_TAB,null); return !t || t===tabId(); }
+function tomarPestana(){ LS.set(K_TAB,tabId()); $('bloqPestana').classList.add('hidden'); }
+window.addEventListener('storage', e=>{
+  if(e.key!==K_TAB || !e.newValue) return;
+  let t=null; try{ t=JSON.parse(e.newValue); }catch(x){}
+  const abierta=!$('scrForm').classList.contains('hidden') || !$('scrCorte').classList.contains('hidden');
+  if(t && t!==tabId() && abierta) $('bloqPestana').classList.remove('hidden');
+});
+$('btnTomarPestana').addEventListener('click', ()=>{
+  tomarPestana();
+  if(LS.get(K_BORR,null)) $('btnContinuar').click(); else home();
+});
+function descartarBorrador(){
+  const d=LS.get(K_BORR,null);
+  if(d){ const p=LS.get(K_PAPEL,[]); p.push({...d, descartado:new Date().toISOString()}); LS.set(K_PAPEL,p.slice(-30)); }
+  LS.del(K_BORR);
+}
+function saveDraft(){ if(META.id_registro && esDueno()) LS.set(K_BORR,{R,META,AUTO,TOUCH,GUARD,CUR,MAXC,CORTE_SEL}); }
 
 function finish(z1){
   prune();
@@ -922,8 +1018,12 @@ window.addEventListener('popstate', ()=>{
   history.pushState({enc:1},'');
   if(enCorte){ $('btnCorteVolver').click(); return; }
   if(REV){ abrirCorte(); return; }
+  // no lleva a A ni B cuando la encuesta ya avanzó (ahí un toque accidental cambia todo): se queda en la sección actual
+  const vs=visibleSections(), prev=vs.filter(i=>i<CUR).pop();
+  if(prev!==undefined && 'AB'.includes(S[prev].k) && avanzada()){ avisoPie('Para ir a la sección '+S[prev].k+' usa el menú de secciones.'); return; }
   $('btnPrev').click();
 });
+function avisoPie(t){ const h=$('footHint'); h.textContent=t; h.style.color='var(--red)'; clearTimeout(avisoPie.t); avisoPie.t=setTimeout(()=>{ h.style.color=''; h.textContent=R.A0_1?`Código ${R.A0_1}`:''; },4000); }
 async function home(){
   show('scrHome');
   const d=LS.get(K_BORR,null);
@@ -950,12 +1050,13 @@ $('btnSalir').addEventListener('click', ()=>{
   LS.del(K_SES); LS.del(K_CONT); CONTACTOS=[]; show('scrLogin');
 });
 $('btnNueva').addEventListener('click', ()=>{
-  if(LS.get(K_BORR,null) && !confirm('Hay un registro sin terminar. Si inicia uno nuevo, ese registro se descarta. ¿Continuar?')) return;
-  LS.del(K_BORR); startRecord();
+  if(LS.get(K_BORR,null) && !confirm('ATENCIÓN: hay una encuesta sin terminar. Si inicias una nueva, esa encuesta se BORRA. Para no perderla, pulsa «Cancelar» y usa «Continuar encuesta». ¿Borrarla e iniciar una nueva?')) return;
+  descartarBorrador(); startRecord();
 });
 $('btnContinuar').addEventListener('click', ()=>{
   const d=LS.get(K_BORR,null); if(!d) return;
-  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; MAXC=Math.max(d.MAXC||0,CUR); CORTE_SEL=d.CORTE_SEL??null; REV=false; BLOQ=false; show('scrForm'); render();
+  tomarPestana(); ULT_ENV=null; EDIT_AB=false;
+  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; GUARD=d.GUARD||{}; CUR=d.CUR||0; MAXC=Math.max(d.MAXC||0,CUR); CORTE_SEL=d.CORTE_SEL??null; REV=false; BLOQ=false; show('scrForm'); render();
 });
 $('btnOtra').addEventListener('click', home);
 $('btnSig').addEventListener('click', ()=>{
@@ -965,10 +1066,19 @@ $('btnSig').addEventListener('click', ()=>{
   if(sig) CSEL=String(sig[CK]);
   home();
 });
+$('btnRecup').addEventListener('click', ()=>{
+  const m=$('recupMsg'); let d;
+  try{ d=JSON.parse($('recupTxt').value.trim()); }catch(e){ m.textContent='El texto no es válido. Copia la celda completa.'; return; }
+  if(!d || !d.R || !d.META || !d.META.id_registro){ m.textContent='No parece una encuesta (faltan R o META).'; return; }
+  if(LS.get(K_BORR,null) && !confirm('Ya hay una encuesta sin terminar en este equipo. Pasará a la papelera de borradores (no se borra). ¿Cargar la del respaldo?')) return;
+  descartarBorrador(); delete d.descartado; LS.set(K_BORR,d); $('recupTxt').value=''; m.textContent='';
+  $('btnContinuar').click();
+});
 $('btnSync').addEventListener('click', sync);
 $('btnRespaldo').addEventListener('click', ()=>{
-  const cola=LS.get(K_COLA,[]);
-  if(!cola.length){ const m=$('homeMsg'); m.className='msg info'; m.textContent='No hay registros pendientes.'; return; }
+  const cola=LS.get(K_COLA,[]), papel=LS.get(K_PAPEL,[]);
+  if(papel.length){ const b=new Blob([JSON.stringify(papel,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`borradores_descartados_mgpp_${today(new Date())}.json`; a.click(); }
+  if(!cola.length){ if(papel.length) return; const m=$('homeMsg'); m.className='msg info'; m.textContent='No hay registros pendientes.'; return; }
   const blob=new Blob([JSON.stringify(cola,null,1)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`respaldo_mgpp_${today(new Date())}.json`; a.click();
 });
@@ -1087,8 +1197,10 @@ $('cDetail').addEventListener('click', e=>{
   const b=e.target.closest('[data-pnp]');
   if(b){ const m=LS.get(K_PNP,{}); m[c[CK]]=Number(b.dataset.pnp); LS.set(K_PNP,m); renderContactos(); return; }
   if(e.target.id==='btnIniciar'){
-    if(LS.get(K_BORR,null) && !confirm('Hay una encuesta sin terminar. Si inicias una nueva, esa se descarta. ¿Continuar?')) return;
-    LS.del(K_BORR); startRecord(c);
+    const d=LS.get(K_BORR,null);
+    if(d && d.R.A0_1 && String(d.R.A0_1)===String(c['Código PUCP'])){ $('btnContinuar').click(); return; }   // misma persona: se retoma, no se borra
+    if(d && !confirm(`ATENCIÓN: tienes una encuesta sin terminar (código ${d.R.A0_1||'sin código'}). Si inicias una nueva, esa encuesta se BORRA. Para no perderla, pulsa «Cancelar» y usa «Continuar encuesta» en el aviso de arriba. ¿Borrarla e iniciar una nueva?`)) return;
+    descartarBorrador(); startRecord(c);
   }
 });
 
