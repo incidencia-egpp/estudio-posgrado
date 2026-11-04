@@ -71,6 +71,9 @@ nav.sections li.done{color:var(--ink)}
 nav.sections li.done b::after{content:"✓";color:var(--ok);margin-left:4px;font-size:.8rem}
 nav.sections li.current{background:var(--paper);color:var(--navy);font-weight:600;box-shadow:inset 3px 0 0 var(--red)}
 nav.sections li.skip{opacity:.4;text-decoration:line-through}
+nav.sections li.go{cursor:pointer}
+nav.sections li.go:hover{background:var(--tint)}
+.revbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#FFF6E5;border:1px solid #F0D9A8;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:.92rem}
 .legend{margin-top:18px;font-size:.8rem;color:var(--slate);border-top:1px solid var(--line);padding-top:12px}
 .legend i{color:var(--slate)}
 .sechead{display:flex;align-items:baseline;gap:14px;margin-bottom:22px}
@@ -256,6 +259,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
         <div class="side hidden" id="sidePanel"></div>
       </nav>
       <div class="card">
+        <div class="revbar hidden" id="revBar"><span>Estás revisando las preguntas para anotar observaciones. Lo ya marcado se conserva.</span><button class="btn" id="btnRevVolver" type="button">Volver a observaciones</button></div>
         <div class="sechead"><span class="letter" id="secLetter"></span><h2 id="secTitle"></h2></div>
         <div id="secBody"></div>
       </div>
@@ -270,6 +274,8 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     <div class="opts" id="corteOpts" role="radiogroup"></div>
     <label class="field" for="corteObs">Observaciones del encuestador/a</label>
     <textarea id="corteObs" placeholder="Por ejemplo: en qué pregunta decidió no continuar y por qué"></textarea>
+    <label class="field">Revisar preguntas <span class="ins" style="display:inline">(toca una sección para ver sus preguntas y códigos; lo marcado y lo anotado se conserva)</span></label>
+    <div class="chips" id="corteNav" role="group" aria-label="Secciones"></div>
     <div class="err-text" id="corteErr"></div>
     <div class="row" style="margin-top:20px"><button class="btn" id="btnCorteOk" type="button">Guardar como incompleta</button><button class="btn ghost" id="btnCorteVolver" type="button">Volver a la encuesta</button></div>
   </section>
@@ -457,6 +463,8 @@ let META = {};         // metadatos del registro
 let AUTO = {};         // valores puestos automáticamente
 let TOUCH = {};        // variables modificadas por el encuestador
 let CUR = 0;           // sección actual (índice en S)
+let MAXC = 0;          // sección más avanzada a la que se llegó (se puede volver a cualquiera hasta ahí)
+let REV = false;       // revisando preguntas desde la pantalla de observaciones
 const $ = id => document.getElementById(id);
 const LS = {
   get:(k,d)=>{ try{ const x=localStorage.getItem(k); return x?JSON.parse(x):d; }catch(e){ return d; } },
@@ -632,6 +640,7 @@ function render(){
   prune();
   const vs=visibleSections();
   if(!vs.includes(CUR)) CUR = vs.filter(i=>i<CUR).pop() ?? vs[0];
+  if(!REV) MAXC=Math.max(MAXC,CUR);
   const s=S[CUR];
   $('secLetter').textContent=s.k; $('secTitle').textContent=s.t;
   const body=$('secBody'); body.innerHTML='';
@@ -641,7 +650,9 @@ function render(){
   S.forEach((x,i)=>{
     const li=document.createElement('li');
     const on=vs.includes(i);
-    li.className = i===CUR ? 'current' : (on ? (vs.indexOf(i)<vs.indexOf(CUR)?'done':'') : 'skip');
+    const go = on && i!==CUR && i<=MAXC;
+    li.className = i===CUR ? 'current' : (on ? ((i<MAXC?'done':'')+(go?' go':'')).trim() : 'skip');
+    if(go){ li.dataset.i=i; li.title='Ir a esta sección'; }
     li.innerHTML=`<b>${x.k}</b><span>${esc(x.t)}</span>`; nav.appendChild(li);
   });
   const pos=vs.indexOf(CUR), last = pos===vs.length-1;
@@ -652,7 +663,9 @@ function render(){
   $('progRow').title = 'El total se ajusta según las respuestas: algunas preguntas se saltan o se abren según lo que responda la persona.';
   $('btnPrev').disabled = pos<=0;
   $('btnNext').textContent = last ? 'Guardar registro' : 'Siguiente';
-  $('btnIncompleta').classList.toggle('hidden', !ACC() || S[CUR].k==='Z');
+  $('btnIncompleta').classList.toggle('hidden', REV || !ACC() || S[CUR].k==='Z');
+  $('revBar').classList.toggle('hidden', !REV);
+  $('btnNext').classList.toggle('hidden', REV);
   renderSide();
   $('footHint').textContent = R.A0_1 ? `Código ${R.A0_1}` : '';
   saveDraft();
@@ -698,7 +711,7 @@ function validate(){
   const errs=[];
   document.querySelectorAll('.item.invalid').forEach(x=>x.classList.remove('invalid'));
   document.querySelectorAll('tr.missing').forEach(x=>x.classList.remove('missing'));
-  document.querySelectorAll('.err-text').forEach(x=>x.remove());
+  $('secBody').querySelectorAll('.err-text').forEach(x=>x.remove());   // solo los avisos de las preguntas (no el de «Terminar encuesta aquí»)
   S[CUR].items.filter(visible).forEach(it=>{
     if(['read','note'].includes(it.type) || it.optional) return;
     let msg='';
@@ -729,13 +742,27 @@ function validate(){
 $('btnNext').addEventListener('click', ()=>{
   if(!validate()) return;
   const vs=visibleSections(), pos=vs.indexOf(CUR);
-  if(pos===vs.length-1){ finish(ACC() ? 1 : null); return; }
+  if(pos===vs.length-1){
+    const f=primeraIncompleta();
+    if(f!==undefined && f!==CUR){ CUR=f; render(); window.scrollTo({top:0}); validate(); return; }
+    finish(ACC() ? 1 : null); return;
+  }
   CUR=vs[pos+1]; render(); window.scrollTo({top:0});
 });
 $('btnPrev').addEventListener('click', ()=>{
   const vs=visibleSections(), pos=vs.indexOf(CUR);
   if(pos>0){ CUR=vs[pos-1]; render(); window.scrollTo({top:0}); }
 });
+/* Ir a una sección ya visitada desde el menú (sin perder respuestas) */
+function irA(i){
+  if(!visibleSections().includes(i) || i>MAXC) return;
+  CUR=i; show('scrForm'); render(); window.scrollTo({top:0});
+}
+$('navList').addEventListener('click', e=>{ const li=e.target.closest('li[data-i]'); if(li) irA(Number(li.dataset.i)); });
+/* Primera sección con preguntas obligatorias sin responder (por si se saltó usando el menú) */
+function primeraIncompleta(){
+  return visibleSections().find(i=>S[i].items.filter(visible).some(it=>!['read','note'].includes(it.type) && !it.optional && !respondida(it)));
+}
 // Z1 al terminar antes del final: 2 = se cortó la llamada, 3 = la persona decidió no continuar, 4 = pide continuar en otro momento
 const CORTE=[[2,'Se cortó la llamada'],[3,'La persona decidió no continuar'],[4,'Pide continuar la encuesta en otro momento']];
 let CORTE_SEL=null;
@@ -743,15 +770,25 @@ function renderCorte(){
   $('corteOpts').innerHTML=CORTE.map(([c,t])=>`<label class="opt${CORTE_SEL===c?' sel':''}"><input type="radio" name="corte" value="${c}" ${CORTE_SEL===c?'checked':''}><span class="code">${c}</span><span>${esc(t)}</span></label>`).join('');
 }
 function obsCorte(){ const x=$('corteObs').value.trim(); if(x) R.OBS=x; else delete R.OBS; saveDraft(); }
-$('btnIncompleta').addEventListener('click', ()=>{
-  CORTE_SEL=null; $('corteErr').textContent=''; $('corteObs').value=R.OBS||'';
+let CUR_CORTE=null;   // sección desde la que se abrió «Terminar encuesta aquí»
+function abrirCorte(){
+  if(!REV) CUR_CORTE=CUR;
+  REV=false; $('corteErr').textContent=''; $('corteObs').value=R.OBS||'';
   const ult=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop();
   $('corteUlt').textContent = ult ? ` (última respondida: ${ult})` : '';
+  const vs=visibleSections().filter(i=>i<=MAXC && S[i].k!=='Z');
+  $('corteNav').innerHTML=vs.map(i=>`<button type="button" class="chip" data-i="${i}">${S[i].k} · ${esc(S[i].t)}</button>`).join('');
   renderCorte(); show('scrCorte'); window.scrollTo({top:0});
+}
+$('btnIncompleta').addEventListener('click', abrirCorte);   // el motivo ya marcado se conserva
+$('corteNav').addEventListener('click', e=>{
+  const b=e.target.closest('[data-i]'); if(!b) return;
+  obsCorte(); REV=true; CUR=Number(b.dataset.i); show('scrForm'); render(); window.scrollTo({top:0});
 });
-$('corteOpts').addEventListener('change', e=>{ CORTE_SEL=Number(e.target.value); $('corteErr').textContent=''; renderCorte(); });
+$('btnRevVolver').addEventListener('click', abrirCorte);
+$('corteOpts').addEventListener('change', e=>{ CORTE_SEL=Number(e.target.value); $('corteErr').textContent=''; renderCorte(); saveDraft(); });
 $('corteObs').addEventListener('input', obsCorte);
-$('btnCorteVolver').addEventListener('click', ()=>{ obsCorte(); show('scrForm'); render(); });
+$('btnCorteVolver').addEventListener('click', ()=>{ obsCorte(); REV=false; if(CUR_CORTE!==null) CUR=CUR_CORTE; show('scrForm'); render(); });
 $('btnCorteOk').addEventListener('click', ()=>{
   if(!CORTE_SEL){ $('corteErr').textContent='Marque el motivo.'; return; }
   obsCorte(); finish(CORTE_SEL);
@@ -770,7 +807,7 @@ const uuid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+
 
 function startRecord(c){
   const now=new Date(), ses=LS.get(K_SES,{});
-  R={}; AUTO={}; TOUCH={}; CUR=0;
+  R={}; AUTO={}; TOUCH={}; CUR=0; MAXC=0; REV=false; CORTE_SEL=null;
   if(c){
     R.A0_1=c['Código PUCP']; R.A0_2=esPnp(c);
     const ll=llamDe(c[CK]); if(!ll) R.A0_3=1; else if(!cerrado(ll.estado)) R.A0_3=Math.min(2,ll.intentos+1);
@@ -780,7 +817,7 @@ function startRecord(c){
   META={id_registro:uuid(), version_form:CONFIG.VERSION, encuestador:ses.codigo||'', fecha_llamada:today(now), hora_inicio:hhmm(now), t0:Date.now()};
   show('scrForm'); render(); window.scrollTo({top:0});
 }
-function saveDraft(){ if(META.id_registro) LS.set(K_BORR,{R,META,AUTO,TOUCH,CUR}); }
+function saveDraft(){ if(META.id_registro) LS.set(K_BORR,{R,META,AUTO,TOUCH,CUR,MAXC,CORTE_SEL}); }
 
 function finish(z1){
   prune();
@@ -844,6 +881,7 @@ function updateStatus(){
    ========================================================= */
 function show(id){
   ['scrLogin','scrHome','scrForm','scrCorte','scrDone'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
+  if((id==='scrForm'||id==='scrCorte') && !(history.state&&history.state.enc)) history.pushState({enc:1},'');
   $('foot').classList.toggle('hidden', id!=='scrForm');
   if(id!=='scrForm') $('progress').style.width='0';
   $('progRow').classList.toggle('hidden', id!=='scrForm');
@@ -852,6 +890,15 @@ function show(id){
   $('who').textContent = ses ? `Encuestador/a: ${ses.nombre||ses.codigo}` : '';
   $('btnSalir').classList.toggle('hidden', !ses || id==='scrLogin');
 }
+/* Botón «atrás» del celular o del navegador durante la encuesta: sección anterior (o volver desde observaciones), sin salir de la página */
+window.addEventListener('popstate', ()=>{
+  const enForm=!$('scrForm').classList.contains('hidden'), enCorte=!$('scrCorte').classList.contains('hidden');
+  if(!enForm && !enCorte) return;
+  history.pushState({enc:1},'');
+  if(enCorte){ $('btnCorteVolver').click(); return; }
+  if(REV){ abrirCorte(); return; }
+  $('btnPrev').click();
+});
 async function home(){
   show('scrHome');
   const d=LS.get(K_BORR,null);
@@ -883,7 +930,7 @@ $('btnNueva').addEventListener('click', ()=>{
 });
 $('btnContinuar').addEventListener('click', ()=>{
   const d=LS.get(K_BORR,null); if(!d) return;
-  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; show('scrForm'); render();
+  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; MAXC=Math.max(d.MAXC||0,CUR); CORTE_SEL=d.CORTE_SEL??null; REV=false; show('scrForm'); render();
 });
 $('btnOtra').addEventListener('click', home);
 $('btnSig').addEventListener('click', ()=>{
