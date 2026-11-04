@@ -71,6 +71,11 @@ nav.sections li.done{color:var(--ink)}
 nav.sections li.done b::after{content:"✓";color:var(--ok);margin-left:4px;font-size:.8rem}
 nav.sections li.current{background:var(--paper);color:var(--navy);font-weight:600;box-shadow:inset 3px 0 0 var(--red)}
 nav.sections li.skip{opacity:.4;text-decoration:line-through}
+nav.sections li.lock{opacity:.55}
+nav.sections li b{white-space:nowrap}
+nav.sections li.lock b::after{content:"🔒";margin-left:3px;font-size:.7rem}
+.lockbar{background:#EEF0F4;border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:.92rem;color:var(--slate)}
+.locked{opacity:.6;pointer-events:none}
 nav.sections li.go{cursor:pointer}
 nav.sections li.go:hover{background:var(--tint)}
 .revbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#FFF6E5;border:1px solid #F0D9A8;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:.92rem}
@@ -465,6 +470,7 @@ let TOUCH = {};        // variables modificadas por el encuestador
 let CUR = 0;           // sección actual (índice en S)
 let MAXC = 0;          // sección más avanzada a la que se llegó (se puede volver a cualquiera hasta ahí)
 let REV = false;       // revisando preguntas desde la pantalla de observaciones
+let BLOQ = false;      // mirando una sección bloqueada (no aplica): se ve pero no se responde
 const $ = id => document.getElementById(id);
 const LS = {
   get:(k,d)=>{ try{ const x=localStorage.getItem(k); return x?JSON.parse(x):d; }catch(e){ return d; } },
@@ -639,20 +645,29 @@ function renderItem(it){
 function render(){
   prune();
   const vs=visibleSections();
-  if(!vs.includes(CUR)) CUR = vs.filter(i=>i<CUR).pop() ?? vs[0];
-  if(!REV) MAXC=Math.max(MAXC,CUR);
+  if(!vs.includes(CUR) && !BLOQ) CUR = vs.filter(i=>i<CUR).pop() ?? vs[0];
+  const bloq = !vs.includes(CUR);
+  if(!REV && !bloq) MAXC=Math.max(MAXC,CUR);
   const s=S[CUR];
   $('secLetter').textContent=s.k; $('secTitle').textContent=s.t;
   const body=$('secBody'); body.innerHTML='';
-  s.items.filter(visible).forEach(it=>body.appendChild(renderItem(it)));
+  if(bloq){
+    // sección que no aplica: se muestran sus preguntas y códigos, pero desactivadas
+    const av=document.createElement('div'); av.className='lockbar';
+    av.textContent = '🔒 Sección bloqueada: ' + (!ACC() ? 'se habilita cuando la persona acepta participar (B0).' : 'no aplica según las respuestas registradas hasta ahora.') + ' Puedes ver las preguntas y sus códigos, pero no responderlas.';
+    body.appendChild(av);
+    const box=document.createElement('div'); box.className='locked';
+    s.items.filter(it=>it.type!=='read').forEach(it=>box.appendChild(renderItem(it)));
+    box.querySelectorAll('input,textarea,select').forEach(x=>x.disabled=true);
+    body.appendChild(box);
+  } else s.items.filter(visible).forEach(it=>body.appendChild(renderItem(it)));
   // navegación lateral
   const nav=$('navList'); nav.innerHTML='';
   S.forEach((x,i)=>{
     const li=document.createElement('li');
     const on=vs.includes(i);
-    const go = on && i!==CUR && i<=MAXC;
-    li.className = i===CUR ? 'current' : (on ? ((i<MAXC?'done':'')+(go?' go':'')).trim() : 'skip');
-    if(go){ li.dataset.i=i; li.title='Ir a esta sección'; }
+    li.className = (i===CUR ? 'current' : (on ? (secCompleta(i)?'done':'') : 'lock')) + (i!==CUR?' go':'') + (i===CUR && !on?' lock':'');
+    if(i!==CUR){ li.dataset.i=i; li.title = on ? 'Ir a esta sección' : 'Bloqueada: no aplica según las respuestas (se puede ver, no responder)'; }
     li.innerHTML=`<b>${x.k}</b><span>${esc(x.t)}</span>`; nav.appendChild(li);
   });
   const pos=vs.indexOf(CUR), last = pos===vs.length-1;
@@ -661,9 +676,9 @@ function render(){
   $('progTxt').textContent = `Sección ${s.k} · ${pg.hechas} de ${pg.total} preguntas respondidas`;
   $('progLeft').textContent = pg.total-pg.hechas===0 ? 'Todo respondido' : `Faltan ${pg.total-pg.hechas}`;
   $('progRow').title = 'El total se ajusta según las respuestas: algunas preguntas se saltan o se abren según lo que responda la persona.';
-  $('btnPrev').disabled = pos<=0;
-  $('btnNext').textContent = last ? 'Guardar registro' : 'Siguiente';
-  $('btnIncompleta').classList.toggle('hidden', REV || !ACC() || S[CUR].k==='Z');
+  $('btnPrev').disabled = bloq ? !vs.some(i=>i<CUR) : pos<=0;
+  $('btnNext').textContent = (last && !bloq) ? 'Guardar registro' : 'Siguiente';
+  $('btnIncompleta').classList.toggle('hidden', REV || !ACC() || (S[CUR].k==='Z' && primeraIncompleta()===undefined));
   $('revBar').classList.toggle('hidden', !REV);
   $('btnNext').classList.toggle('hidden', REV);
   renderSide();
@@ -740,6 +755,8 @@ function validate(){
 }
 
 $('btnNext').addEventListener('click', ()=>{
+  if(BLOQ && !visibleSections().includes(CUR)){ const vs=visibleSections(); BLOQ=false; CUR=vs.find(i=>i>CUR) ?? vs[vs.length-1]; render(); window.scrollTo({top:0}); return; }
+  BLOQ=false;
   if(!validate()) return;
   const vs=visibleSections(), pos=vs.indexOf(CUR);
   if(pos===vs.length-1){
@@ -751,12 +768,19 @@ $('btnNext').addEventListener('click', ()=>{
 });
 $('btnPrev').addEventListener('click', ()=>{
   const vs=visibleSections(), pos=vs.indexOf(CUR);
-  if(pos>0){ CUR=vs[pos-1]; render(); window.scrollTo({top:0}); }
+  if(pos<0){ const p=vs.filter(i=>i<CUR).pop(); if(p!==undefined){ BLOQ=false; CUR=p; render(); window.scrollTo({top:0}); } return; }
+  if(pos>0){ BLOQ=false; CUR=vs[pos-1]; render(); window.scrollTo({top:0}); }
 });
-/* Ir a una sección ya visitada desde el menú (sin perder respuestas) */
+/* Ir a cualquier sección desde el menú, en cualquier momento (sin perder respuestas). Si no aplica, se muestra bloqueada. */
 function irA(i){
-  if(!visibleSections().includes(i) || i>MAXC) return;
+  if(i<0 || i>=S.length) return;
+  BLOQ = !visibleSections().includes(i);
   CUR=i; show('scrForm'); render(); window.scrollTo({top:0});
+}
+/* Sección con todas sus preguntas obligatorias respondidas (para la marca ✓ del menú) */
+function secCompleta(i){
+  return S[i].items.filter(visible).every(it=>['read','note'].includes(it.type) || it.optional || respondida(it))
+      && S[i].items.some(it=>visible(it) && !['read','note'].includes(it.type) && !it.optional);
 }
 $('navList').addEventListener('click', e=>{ const li=e.target.closest('li[data-i]'); if(li) irA(Number(li.dataset.i)); });
 /* Primera sección con preguntas obligatorias sin responder (por si se saltó usando el menú) */
@@ -773,10 +797,11 @@ function obsCorte(){ const x=$('corteObs').value.trim(); if(x) R.OBS=x; else del
 let CUR_CORTE=null;   // sección desde la que se abrió «Terminar encuesta aquí»
 function abrirCorte(){
   if(!REV) CUR_CORTE=CUR;
+  BLOQ=false;
   REV=false; $('corteErr').textContent=''; $('corteObs').value=R.OBS||'';
   const ult=HEADERS.filter(h=>/^[A-Z]/.test(h) && !/^(Z1|OBS)/.test(h) && has(h)).pop();
   $('corteUlt').textContent = ult ? ` (última respondida: ${ult})` : '';
-  const vs=visibleSections().filter(i=>i<=MAXC && S[i].k!=='Z');
+  const vs=visibleSections().filter(i=>S[i].k!=='Z');
   $('corteNav').innerHTML=vs.map(i=>`<button type="button" class="chip" data-i="${i}">${S[i].k} · ${esc(S[i].t)}</button>`).join('');
   renderCorte(); show('scrCorte'); window.scrollTo({top:0});
 }
@@ -807,7 +832,7 @@ const uuid=()=> (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+
 
 function startRecord(c){
   const now=new Date(), ses=LS.get(K_SES,{});
-  R={}; AUTO={}; TOUCH={}; CUR=0; MAXC=0; REV=false; CORTE_SEL=null;
+  R={}; AUTO={}; TOUCH={}; CUR=0; MAXC=0; REV=false; BLOQ=false; CORTE_SEL=null;
   if(c){
     R.A0_1=c['Código PUCP']; R.A0_2=esPnp(c);
     const ll=llamDe(c[CK]); if(!ll) R.A0_3=1; else if(!cerrado(ll.estado)) R.A0_3=Math.min(2,ll.intentos+1);
@@ -930,7 +955,7 @@ $('btnNueva').addEventListener('click', ()=>{
 });
 $('btnContinuar').addEventListener('click', ()=>{
   const d=LS.get(K_BORR,null); if(!d) return;
-  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; MAXC=Math.max(d.MAXC||0,CUR); CORTE_SEL=d.CORTE_SEL??null; REV=false; show('scrForm'); render();
+  R=d.R; META=d.META; AUTO=d.AUTO||{}; TOUCH=d.TOUCH||{}; CUR=d.CUR||0; MAXC=Math.max(d.MAXC||0,CUR); CORTE_SEL=d.CORTE_SEL??null; REV=false; BLOQ=false; show('scrForm'); render();
 });
 $('btnOtra').addEventListener('click', home);
 $('btnSig').addEventListener('click', ()=>{
