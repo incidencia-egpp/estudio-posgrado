@@ -1297,7 +1297,7 @@ async function cargarAvance(){
     const [a,b]=await Promise.all([
       fetch(CONFIG.CONTACTOS_URL+'?accion=avance&codigo='+encodeURIComponent(ses.codigo)).then(r=>r.json()),
       fetch(CONFIG.SCRIPT_URL+'?accion=llamadas&codigo='+encodeURIComponent(ses.codigo)).then(r=>r.json())]);
-    if(!a.ok) throw new Error(a.error==='sin_columna_celda'?'La hoja de contactos aún no tiene la columna «Celda de cuota».':(a.error||'error'));
+    if(!a.ok) throw new Error(a.error==='sin_marco'?'Falta la pestaña «Marco» en el Sheets de contactos.':(a.error||'error'));
     if(!b.ok) throw new Error(b.error||'error');
     if(!Array.isArray(a.celdas)||!Array.isArray(a.personas)) throw new Error('El script de contactos aún no es la versión nueva (falta «Implementar» una versión nueva del Apps Script de contactos).');
     if(!Array.isArray(b.llamadas)) throw new Error('El script de respuestas aún no es la v7.6 (falta «Implementar» una versión nueva).');
@@ -1344,11 +1344,11 @@ function renderAvance(){
     <tr><td>Civiles</td><td class="n">${nCiv}</td><td class="n">${meta.civil}</td><td style="width:30%">${barra(nCiv,meta.civil)}</td></tr></table>
     <div class="note">Los civiles se cumplen entre las tres como bolsa común por celda; la meta personal es solo una referencia para repartir la carga.</div>` : '';
   // llamadas por encuestadora
-  const encs=[...new Set(A.personas.map(p=>p.e))].sort();
+  const encs=[...new Set([...Object.keys(A.metasEnc||{}),...Object.keys(A.asignadas||{}),...A.llamadas.map(l=>l.e).filter(Boolean)])].sort();
   const est=l=>l.z===1?'completa':l.z===3?'abandona':l.z===2?'incompleta':l.z===4?'cita':l.b===2?'rechazo':l.b===3?'cita':l.a6===2?'otra':l.a4===2?'nocontesta':'incompleta';
   const eq=encs.map(e=>{
     const ls=A.llamadas.filter(l=>l.e===e), per=new Set(ls.map(l=>l.c));
-    const asig=A.personas.filter(p=>p.e===e).length;
+    const asig=(A.asignadas||{})[e]||0;
     const n=k=>ls.filter(l=>est(l)===k).length;
     return `<tr${e===yo?' class="tot"':''}><td>${esc(e)}${e===yo?' (yo)':''}</td><td class="n">${asig}</td><td class="n">${ls.length}</td><td class="n">${per.size}</td><td class="n">${new Set(ls.filter(l=>l.z===1).map(l=>l.c)).size}</td><td class="n">${n('rechazo')+n('abandona')}</td><td class="n">${n('nocontesta')+n('otra')}</td><td class="n">${n('cita')+n('incompleta')}</td></tr>`;
   }).join('');
@@ -1360,7 +1360,7 @@ function renderAvance(){
   const misFilas=lm.length?lm.map(x=>`<tr><td>${esc(x.nombre)}</td><td>${esc(x.cel)}</td><td>${esc(x.est)}</td><td class="n">${x.n}</td></tr>`).join(''):'<tr><td colspan="4">Aún no has registrado llamadas en este equipo.</td></tr>';
   box.innerHTML=`<div class="note" style="margin-top:12px">Cuenta solo lo ya enviado al Sheets (las encuestas por redactar o sin conexión aparecen cuando se envíen). Actualizado a las ${esc(A.hora)}. <button type="button" class="btn ghost" id="btnAvRefresh">Actualizar avance</button></div>
   <div class="card" style="padding:16px;margin-top:10px"><h3 class="sub" style="margin-top:0">Cuota total del equipo: ${hechas} / ${total} encuestas completas</h3>${barra(hechas,total)}
-  ${exceso?`<div class="note">Hay ${exceso} completas por encima de la cuota en alguna celda (no suman al total).</div>`:''}${fuera?`<div class="note">${fuera} completas son de personas que no están en la lista de cuotas.</div>`:''}
+  ${exceso?`<div class="note">Hay ${exceso} completas por encima de la cuota en alguna celda (no suman al total).</div>`:''}${fuera?`<div class="note">${fuera} completas son de personas que no están en el marco del histórico.</div>`:''}
   <div class="avt-wrap"><table class="avt" style="margin-top:10px"><tr><th>Celda de cuota</th><th class="n">Completas</th><th></th><th class="n">Faltan</th><th class="n">Hechas por mí</th></tr>${filas}
   <tr class="tot"><td>Total</td><td class="n">${hechas} / ${total}</td><td></td><td class="n">${Math.max(0,total-hechas)}</td><td class="n">${miosCompl.length}</td></tr></table></div></div>
   ${cat}

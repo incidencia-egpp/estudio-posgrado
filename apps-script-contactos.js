@@ -65,7 +65,7 @@ function doGet(e) {
   return json_({ ok: true, contactos: contactos });
 }
 
-// Lista de todo el equipo (código, celda y encuestadora) para calcular el avance de cuotas en la página.
+// Avance de cuotas: ubica a cualquier persona del histórico en su celda (pestaña «Marco») y cuenta cuántas tiene asignadas cada encuestadora.
 function avance_(codigo) {
   if (!codigo) return json_({ ok: false, error: 'codigo_invalido' });
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -73,13 +73,24 @@ function avance_(codigo) {
   const datos = hoja.getDataRange().getValues();
   const enc = datos[0].map(h => norm_(h));
   const iEnc = enc.indexOf('encuestador'), iCel = enc.indexOf('celda de cuota'), iCod = enc.indexOf('codigo pucp'), iNom = enc.indexOf('apellidos y nombres');
-  if (iEnc < 0 || iCel < 0) return json_({ ok: false, error: 'sin_columna_celda' });
   const filas = datos.slice(1).filter(f => String(f[iCod]).trim() !== '');
-  if (!filas.some(f => String(f[iEnc]).trim() === codigo)) return json_({ ok: false, error: 'codigo_invalido' });
-  return json_({
-    ok: true, celdas: CELDAS, metasEnc: METAS_ENC,
-    personas: filas.map(f => ({ c: String(f[iCod]).trim(), n: String(f[iNom]).trim(), e: String(f[iEnc]).trim(), k: Number(f[iCel]) || 0 }))
+  if (iEnc < 0 || !filas.some(f => String(f[iEnc]).trim() === codigo)) return json_({ ok: false, error: 'codigo_invalido' });
+  const asignadas = {};
+  filas.forEach(f => { const e = String(f[iEnc]).trim(); if (e) asignadas[e] = (asignadas[e] || 0) + 1; });
+  // Marco: código → celda para todo el histórico (hoja «Marco»: Código PUCP, Apellidos y nombres, Celda de cuota)
+  const personas = {};
+  const marco = ss.getSheetByName('Marco');
+  if (marco && marco.getLastRow() > 1) {
+    marco.getRange(2, 1, marco.getLastRow() - 1, 3).getValues().forEach(f => {
+      const c = String(f[0]).trim(); if (c) personas[c] = { c: c, n: String(f[1]).trim(), k: Number(f[2]) || 0 };
+    });
+  }
+  if (iCel >= 0) filas.forEach(f => {                    // la celda de la hoja de contactos completa lo que falte en Marco
+    const c = String(f[iCod]).trim(), k = Number(f[iCel]) || 0;
+    if (k && !(personas[c] && personas[c].k)) personas[c] = { c: c, n: String(f[iNom]).trim(), k: k };
   });
+  if (!Object.keys(personas).length) return json_({ ok: false, error: 'sin_marco' });
+  return json_({ ok: true, celdas: CELDAS, metasEnc: METAS_ENC, asignadas: asignadas, personas: Object.keys(personas).map(c => personas[c]) });
 }
 
 /**
