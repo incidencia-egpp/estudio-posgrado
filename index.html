@@ -1299,6 +1299,8 @@ async function cargarAvance(){
       fetch(CONFIG.SCRIPT_URL+'?accion=llamadas&codigo='+encodeURIComponent(ses.codigo)).then(r=>r.json())]);
     if(!a.ok) throw new Error(a.error==='sin_columna_celda'?'La hoja de contactos aún no tiene la columna «Celda de cuota».':(a.error||'error'));
     if(!b.ok) throw new Error(b.error||'error');
+    if(!Array.isArray(a.celdas)||!Array.isArray(a.personas)) throw new Error('El script de contactos aún no es la versión nueva (falta «Implementar» una versión nueva del Apps Script de contactos).');
+    if(!Array.isArray(b.llamadas)) throw new Error('El script de respuestas aún no es la v7.6 (falta «Implementar» una versión nueva).');
     AVANCE={...a, llamadas:b.llamadas, hora:hhmm(new Date())};
   }catch(e){
     AVANCE=null;
