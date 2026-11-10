@@ -149,14 +149,33 @@ table.grid tr.missing td.lab{color:#8E2233}
 /* Inicio / contactos */
 .hhead{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
 .hhead h1{margin:0}.hhead .lead{margin:2px 0 0}
-.tabsH{display:flex;gap:6px;margin:14px 0 4px;border-bottom:1px solid var(--line)}
-.tabH{border:0;background:transparent;padding:8px 16px;cursor:pointer;font-weight:600;color:var(--slate);border-bottom:3px solid transparent;font-size:.95rem}
-.tabH.on{color:var(--navy);border-bottom-color:var(--navy)}
-.avt{width:100%;border-collapse:collapse;font-size:.88rem}.avt th,.avt td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}.avt th{color:var(--slate);font-size:.75rem;text-transform:uppercase}
-.avt td.n,.avt th.n{text-align:right;white-space:nowrap}.avt tr.tot td{font-weight:700}
-.pbar{height:8px;background:var(--tint);border-radius:99px;overflow:hidden;min-width:80px}.pbar i{display:block;height:100%;background:var(--navy)}.pbar.full i{background:var(--ok)}
-.avg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
-.avt-wrap{overflow-x:auto}
+.tabsH{display:flex;gap:4px;margin:16px 0 4px;border-bottom:1px solid var(--line)}
+.tabH{border:0;background:transparent;min-height:44px;padding:10px 18px;cursor:pointer;font-weight:600;color:var(--slate);border-bottom:3px solid transparent;font-size:1rem;transition:color .15s,border-color .15s}
+.tabH:hover{color:var(--navy)}.tabH.on{color:var(--navy);border-bottom-color:var(--navy)}
+.avbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin:14px 0 4px}
+.avbar p{margin:0;color:var(--slate);font-size:.95rem;max-width:70ch}
+.avc{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:14px;min-width:0}
+.avc h3{font-size:1.1rem;color:var(--navy);margin:0 0 4px}
+.avc .hint{color:var(--slate);font-size:.92rem;margin:0 0 12px}
+.avc h4{font-size:.95rem;color:var(--ink);margin:18px 0 6px}
+.avg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.avg>.avc{margin-top:14px}
+.prow{padding:10px 0;border-bottom:1px solid var(--tint)}.prow:last-child{border-bottom:0}
+.prow-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-bottom:6px;font-size:1rem;color:var(--ink)}
+.prow-v{color:var(--ink);white-space:nowrap}.prow-v b{font-size:1.05rem;color:var(--navy)}.prow-v small{color:var(--slate);font-size:.9rem}
+.prow.big .prow-top{font-size:1.1rem;font-weight:600}
+.pbar{height:12px;background:#E3E7EF;border:1px solid #B9C0CF;border-radius:99px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--navy);border-radius:99px}.pbar.full i{background:var(--ok)}
+.prow.big .pbar{height:16px}
+.okb{display:inline-block;background:#E2F2EA;color:#1F5C41;border-radius:4px;padding:0 7px;font-size:.85rem;font-weight:700;margin-left:6px}
+.avt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.avt{width:100%;border-collapse:collapse;font-size:.95rem}
+.avt th,.avt td{padding:10px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.avt thead th{color:var(--ink);font-size:.85rem;font-weight:700;background:var(--tint)}
+.avt td.n,.avt th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.avt tr.yo td,.avt tr.yo th{background:#EEF2FB;font-weight:700}
+.avt tbody th{font-weight:600}
+@media (prefers-reduced-motion:reduce){.tabH{transition:none}}
 .stats{display:flex;gap:10px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 16px;text-align:center;min-width:92px}
 .stat b{display:block;font-size:1.5rem;line-height:1.1;color:var(--navy)}
@@ -254,9 +273,9 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
     </div>
     <div id="redBox" class="draft hidden"></div>
     <div id="draftBox" class="draft hidden"><span id="draftTxt"></span><button class="btn" id="btnContinuar" type="button">Continuar encuesta</button></div>
-    <div class="tabsH" role="tablist"><button type="button" class="tabH on" data-vista="llamadas">Mis llamadas</button><button type="button" class="tabH" data-vista="avance">Avance</button></div>
-    <div id="vistaAvance" class="hidden"></div>
-    <div id="vistaLlamadas">
+    <div class="tabsH" role="tablist" aria-label="Vistas"><button type="button" role="tab" id="tabLlamadas" class="tabH on" data-vista="llamadas" aria-selected="true" aria-controls="vistaLlamadas">Mis llamadas</button><button type="button" role="tab" id="tabAvance" class="tabH" data-vista="avance" aria-selected="false" aria-controls="vistaAvance" tabindex="-1">Avance</button></div>
+    <div id="vistaAvance" class="hidden" role="tabpanel" aria-labelledby="tabAvance" tabindex="-1"></div>
+    <div id="vistaLlamadas" role="tabpanel" aria-labelledby="tabLlamadas">
     <div class="toolbar">
       <input type="text" id="cBuscar" placeholder="Buscar por nombre, código o teléfono" aria-label="Buscar contacto">
       <div class="chips" id="chips" role="group" aria-label="Filtrar"></div>
@@ -347,7 +366,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
    ========================================================= */
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzveEJfhjhjusRqwlBREcdT07ptXXbUMBlgIz6TbKJDwnukjvgxvOoBoIhezO8Fp-AFSg/exec',   // termina en /exec
-  VERSION: 'v1.5',
+  VERSION: 'v1.6',
   // URL /exec del Apps Script que vive en el Sheets de contactos. Si queda vacía, se usan contactos de prueba (nombres inventados).
   CONTACTOS_URL: 'https://script.google.com/macros/s/AKfycbznz_RHI0NZMrtfVAZysuH4swx86V6YeLH-sTPyE-OKzJZHHarIvygl8lGt1IHZDmBB9g/exec'
 };
@@ -1290,7 +1309,7 @@ function renderContactos(){
 let VISTA='llamadas', AVANCE=null;
 async function cargarAvance(){
   const ses=LS.get(K_SES,null), box=$('vistaAvance'); if(!ses) return;
-  box.innerHTML='<div class="empty"><b>Cargando avance…</b></div>';
+  box.setAttribute('aria-busy','true'); box.innerHTML='<div class="empty" role="status"><b>Cargando avance…</b></div>';
   try{
     if(CONFIG.CONTACTOS_DEMO || MODO_PRUEBA) throw new Error('prueba');
     if(!navigator.onLine) throw new Error('offline');
@@ -1301,16 +1320,22 @@ async function cargarAvance(){
     if(!b.ok) throw new Error(b.error||'error');
     if(!Array.isArray(a.celdas)||!Array.isArray(a.personas)) throw new Error('El script de contactos aún no es la versión nueva (falta «Implementar» una versión nueva del Apps Script de contactos).');
     if(!Array.isArray(b.llamadas)) throw new Error('El script de respuestas aún no es la v7.6 (falta «Implementar» una versión nueva).');
-    AVANCE={...a, llamadas:b.llamadas, hora:hhmm(new Date())};
+    AVANCE={...a, llamadas:b.llamadas, hora:hhmm(new Date())}; box.removeAttribute('aria-busy');
   }catch(e){
-    AVANCE=null;
-    box.innerHTML=`<div class="empty"><b>No se pudo cargar el avance</b>${esc(e.message==='prueba'?'No disponible en modo de prueba.':e.message==='offline'?'Sin conexión.':e.message)}</div>`;
+    AVANCE=null; box.removeAttribute('aria-busy');
+    box.innerHTML=`<div class="empty" role="alert"><b>No se pudo cargar el avance</b>${esc(e.message==='prueba'?'No disponible en modo de prueba.':e.message==='offline'?'Sin conexión.':e.message)}</div>`;
     return;
   }
   renderAvance();
 }
 const pct=(x,m)=>m?Math.min(100,Math.round(100*x/m)):0;
-const barra=(x,m)=>`<div class="pbar${x>=m?' full':''}"><i style="width:${pct(x,m)}%"></i></div>`;
+const barra=(x,m,label)=>`<div class="pbar${m&&x>=m?' full':''}" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="${m}" aria-valuenow="${Math.min(x,m)}" aria-valuetext="${x} de ${m} completas"><i style="width:${pct(x,m)}%"></i></div>`;
+/* Fila de progreso: etiqueta, «x de m», faltan (o «Cumplida») y la barra. El texto dice lo mismo que la barra: no depende del color. */
+function prow(label,x,m,extra,big){
+  const falta=Math.max(0,m-x);
+  const estado=falta?`<small>· faltan ${falta}</small>`:'<span class="okb">Cumplida</span>';
+  return `<div class="prow${big?' big':''}"><div class="prow-top"><span>${esc(label)}</span><span class="prow-v"><b>${x}</b> de ${m} ${estado}${extra?` <small>· ${extra}</small>`:''}</span></div>${barra(x,m,label)}</div>`;
+}
 function renderAvance(){
   const A=AVANCE, box=$('vistaAvance'), yo=(LS.get(K_SES,{}).codigo||'');
   A.celdas.forEach(c=>{ const m=c.nombre.match(/(\d{4}–\d{4})/); if(!c.periodo) c.periodo=m?m[1]:'';
@@ -1326,55 +1351,57 @@ function renderAvance(){
   });
   const total=fil.reduce((s,f)=>s+f.meta,0), hechas=fil.reduce((s,f)=>s+Math.min(f.hechas,f.meta),0), fuera=Object.keys(compl).filter(x=>!celdaDe(x)).length;
   const exceso=fil.reduce((s,f)=>s+Math.max(0,f.hechas-f.meta),0);
-  const filas=fil.map(f=>`<tr><td>${esc(f.nombre)}</td><td class="n">${f.hechas} / ${f.meta}</td><td style="width:22%">${barra(f.hechas,f.meta)}</td><td class="n">${Math.max(0,f.meta-f.hechas)}</td><td class="n">${f.mias}</td></tr>`).join('');
-  // cuotas por categoría: PNP/civil, sexo, periodo de egreso y modalidad
-  const grupo=(titulo,fn,vacio)=>{ const m=new Map(); fil.forEach(f=>{ const k=fn(f); if(k===null) return; const o=m.get(k)||{h:0,t:0}; o.h+=Math.min(f.hechas,f.meta); o.t+=f.meta; m.set(k,o); });
-    return `<tr><th colspan="4" style="padding-top:12px">${titulo}</th></tr>`+[...m].map(([k,o])=>`<tr><td>${esc(k)}</td><td class="n">${o.h} / ${o.t}</td><td style="width:30%">${barra(o.h,o.t)}</td><td class="n">${Math.max(0,o.t-o.h)}</td></tr>`).join('')+(vacio?`<tr><td colspan="4" class="note" style="padding:2px 8px">${vacio}</td></tr>`:''); };
-  const cat=`<div class="card" style="padding:16px;margin-top:14px"><h3 class="sub" style="margin-top:0">Cuotas por categoría</h3><div class="avt-wrap"><table class="avt"><tr><th></th><th class="n">Completas / cuota</th><th></th><th class="n">Faltan</th></tr>
-    ${grupo('Policías y civiles',f=>f.pnp?'Policías (PNP)':'Civiles')}
-    ${grupo('Sexo (solo civiles)',f=>f.sexo||null,'Los policías no tienen cuota por sexo.')}
-    ${grupo('Promoción de egreso',f=>f.periodo||'—')}
-    ${grupo('Modalidad (solo civiles)',f=>f.modalidad||null,'Los policías no tienen cuota por modalidad.')}</table></div></div>`;
-  // metas personales
-  const meta=A.metasEnc[yo]||null, miosCompl=Object.keys(compl).filter(x=>compl[x]===yo);
+  const miosCompl=Object.keys(compl).filter(x=>compl[x]===yo);
+  // 1. Cuota total y por celda
+  const celdas=fil.map(f=>prow(f.nombre,Math.min(f.hechas,f.meta),f.meta,f.mias?`${f.mias} ${f.mias===1?'mía':'mías'}`:'')).join('');
+  // 2. Por categoría
+  const grupo=(titulo,fn,nota)=>{ const m=new Map(); fil.forEach(f=>{ const k=fn(f); if(k===null) return; const o=m.get(k)||{h:0,t:0}; o.h+=Math.min(f.hechas,f.meta); o.t+=f.meta; m.set(k,o); });
+    return `<h4>${esc(titulo)}</h4>${[...m].map(([k,o])=>prow(k,o.h,o.t)).join('')}${nota?`<p class="hint" style="margin:4px 0 0">${esc(nota)}</p>`:''}`; };
+  // 3. Mi parte
+  const meta=A.metasEnc[yo]||null;
   const nPnp=miosCompl.filter(x=>(A.celdas.find(c=>c.celda===celdaDe(x))||{}).pnp).length, nCiv=miosCompl.length-nPnp;
-  const tuMeta = meta ? `<h3 class="sub">Mi parte de la cuota</h3>
-    <table class="avt"><tr><th>Tipo</th><th class="n">Completas</th><th class="n">Meta de referencia</th><th></th></tr>
-    ${meta.pnp?`<tr><td>Policías (PNP)</td><td class="n">${nPnp}</td><td class="n">${meta.pnp}</td><td style="width:30%">${barra(nPnp,meta.pnp)}</td></tr>`:''}
-    <tr><td>Civiles</td><td class="n">${nCiv}</td><td class="n">${meta.civil}</td><td style="width:30%">${barra(nCiv,meta.civil)}</td></tr></table>
-    <div class="note">Los civiles se cumplen entre las tres como bolsa común por celda; la meta personal es solo una referencia para repartir la carga.</div>` : '';
-  // llamadas por encuestadora
+  const tuMeta = meta ? `${meta.pnp?prow('Policías (PNP)',nPnp,meta.pnp):''}${prow('Civiles',nCiv,meta.civil)}
+    <p class="hint" style="margin:10px 0 0">Los civiles se cumplen entre las tres como bolsa común por celda. Tu meta es solo una referencia para repartir la carga.</p>`
+    : '<p class="hint">No tienes una meta personal definida.</p>';
+  // 4. Llamadas por encuestadora
   const encs=[...new Set([...Object.keys(A.metasEnc||{}),...Object.keys(A.asignadas||{}),...A.llamadas.map(l=>l.e).filter(Boolean)])].sort();
   const est=l=>l.z===1?'completa':l.z===3?'abandona':l.z===2?'incompleta':l.z===4?'cita':l.b===2?'rechazo':l.b===3?'cita':l.a6===2?'otra':l.a4===2?'nocontesta':'incompleta';
   const eq=encs.map(e=>{
-    const ls=A.llamadas.filter(l=>l.e===e), per=new Set(ls.map(l=>l.c));
-    const asig=(A.asignadas||{})[e]||0;
-    const n=k=>ls.filter(l=>est(l)===k).length;
-    return `<tr${e===yo?' class="tot"':''}><td>${esc(e)}${e===yo?' (yo)':''}</td><td class="n">${asig}</td><td class="n">${ls.length}</td><td class="n">${per.size}</td><td class="n">${new Set(ls.filter(l=>l.z===1).map(l=>l.c)).size}</td><td class="n">${n('rechazo')+n('abandona')}</td><td class="n">${n('nocontesta')+n('otra')}</td><td class="n">${n('cita')+n('incompleta')}</td></tr>`;
+    const ls=A.llamadas.filter(l=>l.e===e), per=new Set(ls.map(l=>l.c)), n=k=>ls.filter(l=>est(l)===k).length;
+    return `<tr${e===yo?' class="yo"':''}><th scope="row">${esc(e)}${e===yo?' (tú)':''}</th><td class="n">${(A.asignadas||{})[e]||0}</td><td class="n">${ls.length}</td><td class="n">${per.size}</td><td class="n">${new Set(ls.filter(l=>l.z===1).map(l=>l.c)).size}</td><td class="n">${n('rechazo')+n('abandona')}</td><td class="n">${n('nocontesta')+n('otra')}</td><td class="n">${n('cita')+n('incompleta')}</td></tr>`;
   }).join('');
-  // mis llamadas: a quiénes y en qué cuota
-  const mis=CONTACTOS.map(c=>{ const cod=String(c[CK]), p=porCod[cod]||{}, cel=A.celdas.find(x=>x.celda===p.k), l=llamDe(cod);
-    return {c, nombre:c['Apellidos y nombres'], cel:cel?cel.nombre:'—', est:l?(ESTADO[l.estado]||['—'])[0]:'Sin llamar', n:l?l.intentos:0, orden:l?1:0}; })
-    .filter(x=>x.n>0 || true).sort((a,b)=>b.orden-a.orden||String(a.nombre).localeCompare(b.nombre));
-  const lm=mis.filter(x=>x.n>0);
-  const misFilas=lm.length?lm.map(x=>`<tr><td>${esc(x.nombre)}</td><td>${esc(x.cel)}</td><td>${esc(x.est)}</td><td class="n">${x.n}</td></tr>`).join(''):'<tr><td colspan="4">Aún no has registrado llamadas en este equipo.</td></tr>';
-  box.innerHTML=`<div class="note" style="margin-top:12px">Cuenta solo lo ya enviado al Sheets (las encuestas por redactar o sin conexión aparecen cuando se envíen). Actualizado a las ${esc(A.hora)}. <button type="button" class="btn ghost" id="btnAvRefresh">Actualizar avance</button></div>
-  <div class="card" style="padding:16px;margin-top:10px"><h3 class="sub" style="margin-top:0">Cuota total del equipo: ${hechas} / ${total} encuestas completas</h3>${barra(hechas,total)}
-  ${exceso?`<div class="note">Hay ${exceso} completas por encima de la cuota en alguna celda (no suman al total).</div>`:''}${fuera?`<div class="note">${fuera} completas son de personas que no están en el marco del histórico.</div>`:''}
-  <div class="avt-wrap"><table class="avt" style="margin-top:10px"><tr><th>Celda de cuota</th><th class="n">Completas</th><th></th><th class="n">Faltan</th><th class="n">Hechas por mí</th></tr>${filas}
-  <tr class="tot"><td>Total</td><td class="n">${hechas} / ${total}</td><td></td><td class="n">${Math.max(0,total-hechas)}</td><td class="n">${miosCompl.length}</td></tr></table></div></div>
-  ${cat}
-  <div class="avg"><div class="card" style="padding:16px">${tuMeta||'<h3 class="sub" style="margin-top:0">Mi parte de la cuota</h3><div class="note">Sin meta personal definida.</div>'}</div>
-  <div class="card" style="padding:16px;grid-column:1/-1"><h3 class="sub" style="margin-top:0">Llamadas por encuestadora</h3><div class="avt-wrap"><table class="avt"><tr><th></th><th class="n">Asignadas</th><th class="n">Llamadas</th><th class="n">Personas</th><th class="n">Completas</th><th class="n">No acepta</th><th class="n">No contestó</th><th class="n">Pendiente</th></tr>${eq}</table></div></div></div>
-  <div class="card" style="padding:16px;margin-top:14px"><h3 class="sub" style="margin-top:0">Mis llamadas: a quién y en qué cuota</h3><div class="avt-wrap"><table class="avt"><tr><th>Persona</th><th>Celda de cuota</th><th>Estado</th><th class="n">Intentos</th></tr>${misFilas}</table></div></div>`;
+  // 5. Mis llamadas
+  const lm=CONTACTOS.map(c=>{ const cod=String(c[CK]), p=porCod[cod]||{}, cel=A.celdas.find(x=>x.celda===p.k), l=llamDe(cod);
+    return {nombre:c['Apellidos y nombres'], cel:cel?cel.nombre:'Fuera del marco', est:l?(ESTADO[l.estado]||['—'])[0]:'', n:l?l.intentos:0}; })
+    .filter(x=>x.n>0).sort((a,b)=>String(a.nombre).localeCompare(b.nombre));
+  const misFilas=lm.length?lm.map(x=>`<tr><th scope="row">${esc(x.nombre)}</th><td>${esc(x.cel)}</td><td>${esc(x.est)}</td><td class="n">${x.n}</td></tr>`).join(''):'<tr><td colspan="4">Aún no has registrado llamadas en este equipo.</td></tr>';
+  box.innerHTML=`<div class="avbar"><p>Cuenta solo lo ya enviado al Sheets. Las encuestas por redactar o sin conexión aparecen cuando se envían. Actualizado a las ${esc(A.hora)}.</p><button type="button" class="btn ghost" id="btnAvRefresh">Actualizar avance</button></div>
+  <section class="avc" aria-labelledby="avTot"><h3 id="avTot">Cuota del equipo</h3>
+    ${prow('Encuestas completas',hechas,total,miosCompl.length?`${miosCompl.length} ${miosCompl.length===1?'mía':'mías'}`:'',true)}
+    ${exceso?`<p class="hint">Hay ${exceso} ${exceso===1?'encuesta completa':'encuestas completas'} por encima de la cuota en alguna celda; no suman al total.</p>`:''}${fuera?`<p class="hint">${fuera===1?'1 encuesta completa es de una persona que no está':fuera+' encuestas completas son de personas que no están'} en el marco del histórico y no suma${fuera===1?'':'n'} a ninguna celda.</p>`:''}
+    <h4>Por celda (estrato · promoción de egreso · sexo)</h4>${celdas}</section>
+  <section class="avc" aria-labelledby="avCat"><h3 id="avCat">Cuotas por categoría</h3>
+    ${grupo('Policías y civiles',f=>f.pnp?'Policías (PNP)':'Civiles')}
+    ${grupo('Sexo (solo civiles)',f=>f.sexo||null,'Los policías no tienen cuota por sexo.')}
+    ${grupo('Promoción de egreso',f=>f.periodo||'—')}
+    ${grupo('Modalidad (solo civiles)',f=>f.modalidad||null,'Los policías no tienen cuota por modalidad.')}</section>
+  <section class="avc" aria-labelledby="avMia"><h3 id="avMia">Mi parte de la cuota</h3>${tuMeta}</section>
+  <section class="avc" aria-labelledby="avEq"><h3 id="avEq">Llamadas por encuestadora</h3><div class="avt-wrap" role="region" aria-labelledby="avEq" tabindex="0"><table class="avt">
+    <thead><tr><th scope="col">Encuestadora</th><th scope="col" class="n">Asignadas</th><th scope="col" class="n">Llamadas</th><th scope="col" class="n">Personas</th><th scope="col" class="n">Completas</th><th scope="col" class="n">No acepta</th><th scope="col" class="n">No contestó</th><th scope="col" class="n">Pendiente</th></tr></thead><tbody>${eq}</tbody></table></div></section>
+  <section class="avc" aria-labelledby="avMis"><h3 id="avMis">Mis llamadas: a quién y en qué cuota</h3><div class="avt-wrap" role="region" aria-labelledby="avMis" tabindex="0"><table class="avt">
+    <thead><tr><th scope="col">Persona</th><th scope="col">Celda de cuota</th><th scope="col">Estado</th><th scope="col" class="n">Intentos</th></tr></thead><tbody>${misFilas}</tbody></table></div></section>`;
 }
-function setVista(v){
+function setVista(v,foco){
   VISTA=v;
-  document.querySelectorAll('.tabH').forEach(b=>b.classList.toggle('on', b.dataset.vista===v));
+  document.querySelectorAll('.tabH').forEach(b=>{ const on=b.dataset.vista===v; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); b.tabIndex=on?0:-1; if(on&&foco) b.focus(); });
   $('vistaLlamadas').classList.toggle('hidden', v!=='llamadas'); $('vistaAvance').classList.toggle('hidden', v!=='avance');
   if(v==='avance') cargarAvance();
 }
 document.querySelector('.tabsH').addEventListener('click', e=>{ const b=e.target.closest('[data-vista]'); if(b) setVista(b.dataset.vista); });
+document.querySelector('.tabsH').addEventListener('keydown', e=>{        // flechas para cambiar de pestaña
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+  e.preventDefault(); setVista(VISTA==='llamadas'?'avance':'llamadas', true);
+});
 $('vistaAvance').addEventListener('click', e=>{ if(e.target.id==='btnAvRefresh') cargarAvance(); });
 $('btnCRefresh').addEventListener('click', async ()=>{ await cargarContactos(true); renderContactos(); });
 $('cBuscar').addEventListener('input', renderContactos);
