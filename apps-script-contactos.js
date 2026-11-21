@@ -12,7 +12,7 @@ const CAMPOS = [
     'CRAEST', 'Egresado o graduado', 'Fecha de sustentación', 'Correo PUCP', 'Correo externo',
     'Celular (movil)', 'Teléfono (fijo)', 'Es PNP', 'Promoción(es) PNP', 'Ciclo de matrícula en lista PNP',
     'Rango / cargo PNP', 'Grupo PNP', 'Horario PNP', 'Fecha de nacimiento', 'Estado en base histórica',
-    'Archivo(s) fuente PNP', 'Celda de cuota'
+    'Archivo(s) fuente PNP', 'Celda de cuota', 'WhatsApp', 'Número no existe'
 ];
 const norm_ = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 const CANON_ = {}; CAMPOS.forEach(c => CANON_[norm_(c)] = c);
@@ -38,6 +38,7 @@ const METAS_ENC = { florurbina: { pnp: 17, civil: 16 }, ximenapize: { pnp: 18, c
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.accion === 'avance') return avance_(String(p.codigo || '').trim());
+  if (p.accion === 'marcar') return marcar_(String(p.codigo || '').trim(), String(p.persona || '').trim(), String(p.campo || ''), String(p.valor || '').trim());
   if (p.accion !== 'contactos') return json_({ ok: true, servicio: 'contactos-mgpp' });
 
   const codigo = String(p.codigo || '').trim();
@@ -91,6 +92,36 @@ function avance_(codigo) {
   });
   if (!Object.keys(personas).length) return json_({ ok: false, error: 'sin_marco' });
   return json_({ ok: true, celdas: CELDAS, metasEnc: METAS_ENC, asignadas: asignadas, personas: Object.keys(personas).map(c => personas[c]) });
+}
+
+// Marcas que hacen las encuestadoras desde la página y quedan en la hoja de contactos:
+//  · whatsapp → columna «WhatsApp»: «Sí · fecha hora» o «No» (primera forma de contacto).
+//  · numero   → columna «Número no existe»: «Celular · fecha», «Fijo · fecha», «Celular y fijo · fecha» o vacío.
+// Solo la encuestadora asignada a esa fila puede marcarla. Si la columna no existe, se crea al final.
+const MARCAS = {
+  whatsapp: { col: 'WhatsApp', ok: v => /^(S[ií] · .+|No)$/.test(v) },
+  numero: { col: 'Número no existe', ok: v => v === '' || /^(Celular|Fijo|Celular y fijo) · .+$/.test(v) }
+};
+function marcar_(codigo, persona, campo, valor) {
+  const M = MARCAS[campo];
+  if (!M) return json_({ ok: false, error: 'campo_invalido' });
+  if (!codigo || !persona) return json_({ ok: false, error: 'codigo_invalido' });
+  if (!M.ok(valor)) return json_({ ok: false, error: 'valor_invalido' });
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const hoja = ss.getSheetByName(HOJA) || ss.getSheets()[0];
+    const datos = hoja.getDataRange().getValues();
+    const enc = datos[0].map(h => norm_(h));
+    const iEnc = enc.indexOf('encuestador'), iCod = enc.indexOf('codigo pucp');
+    let iC = enc.indexOf(norm_(M.col));
+    if (iEnc < 0 || iCod < 0) return json_({ ok: false, error: 'sin_columna_encuestador' });
+    const fila = datos.findIndex((f, i) => i > 0 && String(f[iCod]).trim() === persona && String(f[iEnc]).trim() === codigo);
+    if (fila < 0) return json_({ ok: false, error: 'no_asignada' });
+    if (iC < 0) { iC = datos[0].length; hoja.getRange(1, iC + 1).setValue(M.col).setFontWeight('bold'); }
+    hoja.getRange(fila + 1, iC + 1).setNumberFormat('@').setValue(valor);
+    return json_({ ok: true });
+  } finally { lock.releaseLock(); }
 }
 
 /**
