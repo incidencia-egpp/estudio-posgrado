@@ -213,6 +213,8 @@ table.grid tr.missing td.lab{color:#8E2233}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0 4px}
 .seg button{border:0;background:#fff;padding:9px 18px;cursor:pointer;font-weight:600}
 .seg button.sel{background:var(--navy);color:#fff}
+.seg.wrap{display:flex;flex-wrap:wrap}.seg.wrap button{flex:1 1 45%;border-top:1px solid var(--line);margin-top:-1px}
+.seg button.stop.sel{background:#8E2233}
 .dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px 20px;margin:10px 0 6px}
 .dl div span{display:block;font-size:.78rem;color:var(--slate)}
 .dl div b{font-weight:600;word-break:break-word}
@@ -367,7 +369,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
    ========================================================= */
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzveEJfhjhjusRqwlBREcdT07ptXXbUMBlgIz6TbKJDwnukjvgxvOoBoIhezO8Fp-AFSg/exec',   // termina en /exec
-  VERSION: 'v1.8',
+  VERSION: 'v1.9',
   // URL /exec del Apps Script que vive en el Sheets de contactos. Si queda vacía, se usan contactos de prueba (nombres inventados).
   CONTACTOS_URL: 'https://script.google.com/macros/s/AKfycbznz_RHI0NZMrtfVAZysuH4swx86V6YeLH-sTPyE-OKzJZHHarIvygl8lGt1IHZDmBB9g/exec'
 };
@@ -1274,14 +1276,20 @@ const ESTADO={completa:['Completada','ok'],incompleta:['Incompleta','warn'],aban
 const cerrado = e => e==='completa' || e==='rechazo' || e==='abandona';
 const llamDe = cod => LS.get(K_LLAM(),{})[cod] || null;
 /* WhatsApp: primera forma de contacto. Se guarda en este equipo y en la columna «WhatsApp» del Sheets de contactos. */
+/* v: 1 = escrito, 2 = aún no, 3 = no responde, 4 = no desea que lo contacten */
+const WSP_TXT={1:'Sí',2:'No',3:'No responde',4:'No desea contacto'};
 function wspDe(c){
   const l=LS.get(K_WSP(),{})[c[CK]]; if(l) return l;
   const h=String(c['WhatsApp']||'').trim(); if(!h) return null;
-  return /^s[ií]/i.test(h) ? {v:1, f:h.replace(/^s[ií]\s*[·-]?\s*/i,''), sync:true} : /^no/i.test(h) ? {v:2, f:'', sync:true} : null;
+  const [t,f]=h.split('·').map(x=>x.trim()), tl=t.toLowerCase();
+  const v=/^no desea/.test(tl)?4 : /^no responde/.test(tl)?3 : /^s[ií]/.test(tl)?1 : /^no/.test(tl)?2 : 0;
+  return v ? {v, f:f||'', sync:true} : null;
 }
+const wspV = c => (wspDe(c)||{}).v||0;
+const noContactar = c => wspV(c)===4;
 function marcarWsp(cod, v){
   const m=LS.get(K_WSP(),{}), now=new Date();
-  m[cod]={v, f:v===1?`${today(now)} ${hhmm(now)}`:'', sync:false}; LS.set(K_WSP(),m); syncWsp();
+  m[cod]={v, f:v!==2?`${today(now)} ${hhmm(now)}`:'', sync:false}; LS.set(K_WSP(),m); syncWsp();
 }
 /* Números que ya no existen (celular y/o fijo). Columna «Número no existe» del Sheets de contactos. */
 function numDe(c){
@@ -1304,7 +1312,7 @@ async function syncWsp(){
   const listo=(K,cod,x)=>{ const m=LS.get(K(),{}); if(m[cod] && JSON.stringify({...m[cod],sync:0})===JSON.stringify({...x,sync:0})){ m[cod].sync=true; LS.set(K(),m); } };
   try{
     for(const [cod,x] of Object.entries(LS.get(K_WSP(),{})).filter(([,x])=>!x.sync)){
-      const r=await enviar('whatsapp',cod,x.v===1?('Sí · '+x.f):'No'); if(r&&r.ok) listo(K_WSP,cod,x);
+      const r=await enviar('whatsapp',cod,x.v===2?'No':(WSP_TXT[x.v]+' · '+x.f)); if(r&&r.ok) listo(K_WSP,cod,x);
     }
     for(const [cod,x] of Object.entries(LS.get(K_NUM(),{})).filter(([,x])=>!x.sync)){
       const t=numTexto(x); const r=await enviar('numero',cod,t?(t+' · '+x.f):''); if(r&&r.ok) listo(K_NUM,cod,x);
@@ -1323,12 +1331,12 @@ function renderContactos(){
   const total=CONTACTOS.length, hechos=CONTACTOS.filter(c=>cerrado(est(c))).length;
   $('cLead').textContent=(CONFIG.CONTACTOS_DEMO?'Datos de prueba (nombres inventados). ':'')+`Hola, ${ses.nombre||ses.codigo}. Elige a quién llamar.`;
   $('stats').innerHTML=`<div class="stat"><b>${total}</b><span>Asignados</span></div><div class="stat"><b>${total-hechos}</b><span>Por llamar</span></div><div class="stat ok"><b>${hechos}</b><span>Cerrados</span></div>`;
-  const F=[['todos','Todos',total],['pend','Por llamar',total-hechos],['hechos','Cerrados',hechos],['pnp','PNP',CONTACTOS.filter(c=>esPnp(c)===1).length],['sinwsp','Sin WhatsApp',CONTACTOS.filter(c=>(wspDe(c)||{}).v!==1).length]];
+  const F=[['todos','Todos',total],['pend','Por llamar',total-hechos],['hechos','Cerrados',hechos],['pnp','PNP',CONTACTOS.filter(c=>esPnp(c)===1).length],['sinwsp','Sin WhatsApp',CONTACTOS.filter(c=>[0,2].includes(wspV(c))).length],['nocont','No contactar',CONTACTOS.filter(noContactar).length]];
   $('chips').innerHTML=F.map(([k,t,n])=>`<button type="button" class="chip${FILTRO===k?' on':''}" data-f="${k}">${t} (${n})</button>`).join('');
   let lista=CONTACTOS.filter(c=>!q || [c[CK],c['Apellidos y nombres'],c['Celular (movil)'],c['Teléfono (fijo)']].some(x=>String(x||'').toLowerCase().includes(q)))
-    .filter(c=>FILTRO==='todos' || (FILTRO==='pend'&&!cerrado(est(c))) || (FILTRO==='hechos'&&cerrado(est(c))) || (FILTRO==='pnp'&&esPnp(c)===1) || (FILTRO==='sinwsp'&&(wspDe(c)||{}).v!==1));
-  lista=[...lista].sort((a,b)=>cerrado(est(a))-cerrado(est(b)));         // los cerrados van al final
-  $('cList').innerHTML = lista.length ? lista.map(c=>`<button type="button" class="citem${String(c[CK])===String(CSEL)?' on':''}" data-cod="${esc(c[CK])}"><b>${esc(c['Apellidos y nombres'])}</b><small>${esc(c[CK])} · ${esc(val(c['Celular (movil)']))}</small><br>${badgeEstado(c)}${esPnp(c)===1?'<span class="badge pnp">PNP</span>':''}${(wspDe(c)||{}).v===1?'<span class="badge wsp">WhatsApp ✓</span>':''}${numTexto(numDe(c))?'<span class="badge no">'+(numDe(c).cel&&numDe(c).fijo?'Números no existen':numDe(c).cel?'Celular no existe':'Fijo no existe')+'</span>':''}</button>`).join('')
+    .filter(c=>FILTRO==='todos' || (FILTRO==='pend'&&!cerrado(est(c))) || (FILTRO==='hechos'&&cerrado(est(c))) || (FILTRO==='pnp'&&esPnp(c)===1) || (FILTRO==='sinwsp'&&[0,2].includes(wspV(c))) || (FILTRO==='nocont'&&noContactar(c)));
+  lista=[...lista].sort((a,b)=>(cerrado(est(a))||noContactar(a))-(cerrado(est(b))||noContactar(b)));         // los cerrados van al final
+  $('cList').innerHTML = lista.length ? lista.map(c=>`<button type="button" class="citem${String(c[CK])===String(CSEL)?' on':''}" data-cod="${esc(c[CK])}"><b>${esc(c['Apellidos y nombres'])}</b><small>${esc(c[CK])} · ${esc(val(c['Celular (movil)']))}</small><br>${badgeEstado(c)}${esPnp(c)===1?'<span class="badge pnp">PNP</span>':''}${({1:'<span class="badge wsp">WhatsApp ✓</span>',3:'<span class="badge warn">No responde WhatsApp</span>',4:'<span class="badge no">No desea contacto</span>'})[wspV(c)]||''}${numTexto(numDe(c))?'<span class="badge no">'+(numDe(c).cel&&numDe(c).fijo?'Números no existen':numDe(c).cel?'Celular no existe':'Fijo no existe')+'</span>':''}</button>`).join('')
     : `<div class="empty"><b>${total?'Sin resultados':'Aún no hay contactos'}</b>${total?'Prueba con otro filtro o búsqueda.':'Si acabas de entrar, pulsa «Actualizar lista».'}</div>`;
   const c=contactoDe(CSEL), d=$('cDetail');
   if(!c){ d.innerHTML=`<div class="empty"><b>Elige a una persona de la lista</b>Aquí verás sus datos, podrás marcar si es policía e iniciar la llamada.</div>`; return; }
@@ -1338,10 +1346,11 @@ function renderContactos(){
   d.innerHTML=`<h2>${esc(c['Apellidos y nombres'])}</h2><div class="note">Código ${esc(c[CK])}${c['Celular (movil)']?' · Celular '+esc(c['Celular (movil)']):''}</div>
   <div class="estado ${l?(ESTADO[l.estado]||[0,''])[1]:''}">${esc(info)}</div>
   ${redDe(c[CK])?`<div class="row" style="margin:14px 0 0"><button type="button" class="btn big" id="btnRedContacto">Revisar y redactar (por enviar)</button></div>`:''}
-  <div class="row" style="margin:14px 0 4px"><button type="button" class="btn big${cerr||redDe(c[CK])?' ghost':''}" id="btnIniciar">${btn}</button></div>
+  ${w.v===4?'<div class="msg err" role="alert" style="margin:14px 0 0"><b>No desea que lo contacten.</b> No llamar ni volver a escribir.</div>':''}
+  <div class="row" style="margin:14px 0 4px"><button type="button" class="btn big${cerr||redDe(c[CK])||w.v===4?' ghost':''}" id="btnIniciar">${btn}</button></div>
   <h3 class="sub">¿Ya se le escribió por WhatsApp?</h3>
-  <div class="seg" role="group" aria-label="Contactado por WhatsApp"><button type="button" data-wsp="1" class="${w.v===1?'sel':''}" aria-pressed="${w.v===1}">Sí, ya se le escribió</button><button type="button" data-wsp="2" class="${w.v===2?'sel':''}" aria-pressed="${w.v===2}">No</button></div>
-  <div class="note">${w.v===1?'Marcado el '+esc(w.f||'—')+'. ':w.v===2?'Marcado: aún no. ':'Sin marcar. '}${w.v?(w.sync?'Guardado en el Sheets.':'Guardado en este equipo; se subirá al Sheets cuando haya conexión.'):'Es la primera forma de contacto: márcalo apenas le escribas.'}</div>
+  <div class="seg wrap" role="group" aria-label="Contacto por WhatsApp">${[[2,'Aún no'],[1,'Sí, ya se le escribió'],[3,'No responde'],[4,'No desea que lo contacten']].map(([v,t])=>`<button type="button" data-wsp="${v}" class="${w.v===v?'sel':''}${v===4?' stop':''}" aria-pressed="${w.v===v}">${t}</button>`).join('')}</div>
+  <div class="note">${w.v===2?'Marcado: aún no. ':w.v?'«'+esc({1:'Ya se le escribió',3:'No responde',4:'No desea que lo contacten'}[w.v])+'» marcado el '+esc(w.f||'—')+'. ':'Sin marcar. '}${w.v?(w.sync?'Guardado en el Sheets.':'Guardado en este equipo; se subirá al Sheets cuando haya conexión.'):'Es la primera forma de contacto: márcalo apenas le escribas.'}</div>
   <h3 class="sub">¿Algún número ya no existe?</h3>
   <div class="seg" role="group" aria-label="Números que ya no existen"><button type="button" data-num="cel" class="${nx.cel?'sel':''}" aria-pressed="${nx.cel}">Celular no existe</button><button type="button" data-num="fijo" class="${nx.fijo?'sel':''}" aria-pressed="${nx.fijo}">Fijo no existe</button></div>
   <div class="note">${numTexto(nx)?'Marcado el '+esc(nx.f||'—')+' (pulsa otra vez para quitar). '+(nx.sync?'Guardado en el Sheets.':'Guardado en este equipo; se subirá al Sheets cuando haya conexión.'):'Márcalo si al llamar sale que el número no existe o está fuera de servicio.'}</div>
@@ -1472,6 +1481,7 @@ $('cDetail').addEventListener('click', e=>{
   if(bn){ marcarNum(String(c[CK]), bn.dataset.num); renderContactos(); return; }
   if(e.target.id==='btnRedContacto'){ const x=redDe(c[CK]); if(x) abrirRed(x.META.id_registro); return; }
   if(e.target.id==='btnIniciar'){
+    if(noContactar(c) && !confirm('Esta persona NO desea que la contacten. ¿Iniciar la encuesta de todas formas?')) return;
     const d=LS.get(K_BORR,null);
     if(d && d.R.A0_1 && String(d.R.A0_1)===String(c['Código PUCP'])){ $('btnContinuar').click(); return; }   // misma persona: se retoma, no se borra
     if(d && !confirm(`ATENCIÓN: tienes una encuesta sin terminar (código ${d.R.A0_1||'sin código'}). Si inicias una nueva, esa encuesta se BORRA. Para no perderla, pulsa «Cancelar» y usa «Continuar encuesta» en el aviso de arriba. ¿Borrarla e iniciar una nueva?`)) return;

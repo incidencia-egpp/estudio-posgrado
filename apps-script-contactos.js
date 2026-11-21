@@ -95,11 +95,11 @@ function avance_(codigo) {
 }
 
 // Marcas que hacen las encuestadoras desde la página y quedan en la hoja de contactos:
-//  · whatsapp → columna «WhatsApp»: «Sí · fecha hora» o «No» (primera forma de contacto).
+//  · whatsapp → columna «WhatsApp»: «Sí · fecha hora», «No responde · fecha», «No desea contacto · fecha» o «No».
 //  · numero   → columna «Número no existe»: «Celular · fecha», «Fijo · fecha», «Celular y fijo · fecha» o vacío.
 // Solo la encuestadora asignada a esa fila puede marcarla. Si la columna no existe, se crea al final.
 const MARCAS = {
-  whatsapp: { col: 'WhatsApp', ok: v => /^(S[ií] · .+|No)$/.test(v) },
+  whatsapp: { col: 'WhatsApp', ok: v => /^((S[ií]|No responde|No desea contacto) · .+|No)$/.test(v) },
   numero: { col: 'Número no existe', ok: v => v === '' || /^(Celular|Fijo|Celular y fijo) · .+$/.test(v) }
 };
 function marcar_(codigo, persona, campo, valor) {
