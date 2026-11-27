@@ -296,7 +296,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
       <button class="btn ghost" id="btnRespaldo" type="button">Descargar respaldo de pendientes</button>
     </div>
     <details class="recup"><summary>Recuperar una encuesta desde un respaldo (uso del equipo de investigación)</summary>
-      <p>Pega el contenido de la columna <b>datos</b> o <b>datos_max</b> de la hoja «borradores» del Sheets, o una encuesta del archivo de borradores descartados. Se abrirá como encuesta sin terminar.</p>
+      <p>Pega el contenido de la columna <b>datos</b> o <b>datos_max</b> de la hoja «borradores» del Sheets, el contenido del archivo «encuesta_en_curso» o una encuesta del archivo de borradores descartados. Se abrirá como encuesta sin terminar.</p>
       <textarea id="recupTxt" placeholder='{"R":{...},"META":{...}}'></textarea>
       <button class="btn ghost" id="btnRecup" type="button">Cargar encuesta</button> <span id="recupMsg"></span>
     </details>
@@ -369,7 +369,7 @@ nav.sections{max-height:calc(100vh - 110px);overflow:auto}
    ========================================================= */
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzveEJfhjhjusRqwlBREcdT07ptXXbUMBlgIz6TbKJDwnukjvgxvOoBoIhezO8Fp-AFSg/exec',   // termina en /exec
-  VERSION: 'v1.9',
+  VERSION: 'v1.10',
   // URL /exec del Apps Script que vive en el Sheets de contactos. Si queda vacía, se usan contactos de prueba (nombres inventados).
   CONTACTOS_URL: 'https://script.google.com/macros/s/AKfycbznz_RHI0NZMrtfVAZysuH4swx86V6YeLH-sTPyE-OKzJZHHarIvygl8lGt1IHZDmBB9g/exec'
 };
@@ -966,14 +966,23 @@ function startRecord(c){
   show('scrForm'); render(); window.scrollTo({top:0});
 }
 /* Copia del borrador en la hoja «borradores» del Sheets (una fila por encuesta; se guarda también la versión con más respuestas) */
-function enviarBorrador(){
+/* La copia se manda al cambiar de sección y también mientras se responde: 3 s después del último cambio,
+   al salir de la página o pasar a otra app (p. ej. el marcador del teléfono) y al volver la conexión. */
+let BORR_PEND=false, BORR_T=null;
+function programarBorrador(){ BORR_PEND=true; clearTimeout(BORR_T); BORR_T=setTimeout(()=>enviarBorrador(), 3000); }
+function borradorPendienteYa(){ if(BORR_PEND){ clearTimeout(BORR_T); enviarBorrador(true); } }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') borradorPendienteYa(); });
+window.addEventListener('pagehide', borradorPendienteYa);
+window.addEventListener('online', borradorPendienteYa);
+function enviarBorrador(salida){
   if(MODO_PRUEBA || !navigator.onLine || !META.id_registro || !esDueno()) return;
   const ses=LS.get(K_SES,{});
   const d={R,META,AUTO,TOUCH,GUARD,CUR,MAXC,CORTE_SEL,RED};
   const n=Object.keys(R).filter(k=>has(k) && !AUTO[k]).length + Object.keys(GUARD).length;
   fetch(CONFIG.SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({codigo:ses.codigo, borrador:{id_registro:META.id_registro, encuestador:META.encuestador||'', version_form:META.version_form||'',
-      A0_1:R.A0_1||'', seccion:RED?'LLAMADA CERRADA':(S[CUR]?S[CUR].k:''), n_respuestas:n, datos:JSON.stringify(d)}})}).catch(()=>{});
+      A0_1:R.A0_1||'', seccion:RED?'LLAMADA CERRADA':(S[CUR]?S[CUR].k:''), n_respuestas:n, datos:JSON.stringify(d)}}), keepalive:!!salida})
+    .then(r=>r.json()).then(j=>{ if(j && j.ok) BORR_PEND=false; }).catch(()=>{ BORR_PEND=true; });
 }
 /* Llamadas terminadas por redactar (varias a la vez; el borrador en curso es aparte) */
 const redLista = () => LS.get(K_RED,[]);
@@ -1031,8 +1040,12 @@ function descartarBorrador(){
   LS.del(K_BORR);
 }
 function saveDraft(){
-  if(RED){ if(META.id_registro && esDueno()) redGuardar({R,META,AUTO,TOUCH,GUARD,CUR,MAXC,...RED}); return; }
-  if(META.id_registro && esDueno()) LS.set(K_BORR,{R,META,AUTO,TOUCH,GUARD,CUR,MAXC,CORTE_SEL});
+  if(RED){ if(META.id_registro && esDueno()){ redGuardar({R,META,AUTO,TOUCH,GUARD,CUR,MAXC,...RED}); programarBorrador(); } return; }
+  if(META.id_registro && esDueno()){
+    const ant=LS.get(K_BORR,null), nuevo={R,META,AUTO,TOUCH,GUARD,CUR,MAXC,CORTE_SEL};
+    LS.set(K_BORR,nuevo);
+    if(!ant || JSON.stringify(ant)!==JSON.stringify(nuevo)) programarBorrador();   // solo si algo cambió
+  }
 }
 
 const estadoDe = z1 => z1===1?'completa' : z1===2?'incompleta' : z1===3?'abandona' : z1===4?'cita' : R.B0===2?'rechazo' : R.B0===3?'cita' : R.A0_6===2?'otra' : R.A0_4===2?'nocontesta' : 'incompleta';
@@ -1199,10 +1212,11 @@ $('btnRecup').addEventListener('click', ()=>{
 });
 $('btnSync').addEventListener('click', sync);
 $('btnRespaldo').addEventListener('click', ()=>{
-  const cola=LS.get(K_COLA,[]), papel=LS.get(K_PAPEL,[]), red=redLista();
+  const cola=LS.get(K_COLA,[]), papel=LS.get(K_PAPEL,[]), red=redLista(), borr=LS.get(K_BORR,null);
+  if(borr){ const b=new Blob([JSON.stringify(borr,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`encuesta_en_curso_mgpp_${today(new Date())}.json`; a.click(); }
   if(papel.length){ const b=new Blob([JSON.stringify(papel,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`borradores_descartados_mgpp_${today(new Date())}.json`; a.click(); }
   if(red.length){ const b=new Blob([JSON.stringify(red,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`por_redactar_mgpp_${today(new Date())}.json`; a.click(); }
-  if(!cola.length){ if(papel.length||red.length) return; const m=$('homeMsg'); m.className='msg info'; m.textContent='No hay registros pendientes.'; return; }
+  if(!cola.length){ if(papel.length||red.length||borr) return; const m=$('homeMsg'); m.className='msg info'; m.textContent='No hay registros pendientes.'; return; }
   const blob=new Blob([JSON.stringify(cola,null,1)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`respaldo_mgpp_${today(new Date())}.json`; a.click();
 });
